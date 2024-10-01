@@ -58,6 +58,9 @@ def server():
             except KeyboardInterrupt:
                 print("Data is saved under outputs/{date}")
                 cap.release()
+
+            finally:
+                np.save('outputs/{date}/motor_values.npy', motor_values)
     
         def take_video():
             commandString = gstreamer_pipeline()
