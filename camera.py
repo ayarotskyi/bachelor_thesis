@@ -2,7 +2,6 @@ from gstreamer_pipeline import gstreamer_pipeline
 import atexit
 import cv2
 import threading
-from highlight_obstacles import highlight_obstacles
 
 """
 The Camera class is used to create an instance of the camera, also providing functions to take a picture or a video.
@@ -50,8 +49,6 @@ class Camera():
         while True:
             re, image = self.cap.read()
             if re:
-                image = highlight_obstacles(image)
-                self.value = image
                 if self.save_recording:
                     self.out.write(image)
             else:
