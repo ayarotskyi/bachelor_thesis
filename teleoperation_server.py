@@ -91,3 +91,6 @@ def server():
             elif axis == 1:
                 jetbot.right_motor.setSpeed(value)
                 right_motor_value = value
+
+if __name__ == '__main__':
+    server()
