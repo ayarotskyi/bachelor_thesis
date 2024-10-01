@@ -18,7 +18,7 @@ class JetBot():
     def __init__(self, left_motor, right_motor, save_recording=True, *args, **kwargs):
         self.left_motor = left_motor
         self.right_motor = right_motor
-        self.camera = Camera(save_recording)
+        self.camera = None
         
         atexit.register(self.stop)
         
