@@ -3,6 +3,9 @@ import socket
 import struct
 import time
 
+SERVER_ADDRESS = "127.0.0.1"  # Change this to your server's address
+SERVER_PORT = 8090  # Change this to your server's port
+
 class GamepadSender:
     def __init__(self, server_address, server_port):
         self.server_address = server_address
@@ -65,8 +68,6 @@ class GamepadSender:
         self.sock.close()
 
 if __name__ == "__main__":
-    SERVER_ADDRESS = "192.168.0.134"  # Change this to your server's address
-    SERVER_PORT = 8090  # Change this to your server's port
 
     sender = GamepadSender(SERVER_ADDRESS, SERVER_PORT)
     
