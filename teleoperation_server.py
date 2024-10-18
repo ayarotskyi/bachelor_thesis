@@ -33,6 +33,7 @@ def server():
         jetbot = JetBot(left_motor, right_motor, save_recording=False)
 
     s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     print('Socket created')
     
     s.bind((HOST,PORT))
@@ -49,49 +50,54 @@ def server():
 
     isRecordingStarted = False
 
-    def startRecording():
-        motor_values = np.array([])
-        def capture_frames(cap):
+    def startRecording(cap, run_event):
+        def capture_frames(cap, event):
+            motor_values = np.array([], dtype=[('left', np.float64), ('right', np.float64)])
             date = str(datetime.datetime.now().timestamp())
             frameIndex = 0
             if not os.path.exists("outputs/"+date+"/images"):
                 os.makedirs("outputs/"+date+"/images")
             try:
-                while cap.isOpened(): 
+                while cap.isOpened() and event.is_set(): 
                     re, frame = cap.read()
                     cv2.imwrite('outputs/'+date+'/images/+'+str(frameIndex)+'.jpg', frame)
                     with motor_lock:
-                        np.append(motor_values, [(x_axis_value, y_axis_value)])
+                        motor_values = np.append(motor_values, np.array([(x_axis_value, y_axis_value)], dtype=motor_values.dtype))
                     frameIndex = frameIndex + 1
-                    
-            except KeyboardInterrupt:
-                print("Data is saved under outputs/{date}")
+            finally:
+                print('Data is saved under outputs/'+date)
                 cap.release()
                 np.save('outputs/'+date+'/motor_values.npy', motor_values)
     
         def take_video():
-            if MOCK_SERVER:
-                cap = cv2.VideoCapture()
-            else:
-                commandString = gstreamer_pipeline()
-                cap = cv2.VideoCapture(commandString, cv2.CAP_GSTREAMER)
-    
-            ramp_frames = 10
-            for i in range(ramp_frames):
-                ret, ramp = cap.read()
+                
             print("starting recording")
-            thread = threading.Thread(target=capture_frames, args=(cap, ))
+            thread = threading.Thread(target=capture_frames, args=(cap, run_event))
             thread.start()
+            return thread
             
-        take_video()
+        return take_video()
 
-    while True:
-        try:
+    recording_thread = None
+    run_event = threading.Event()
+    run_event.set()
+    if MOCK_SERVER:
+        cap = cv2.VideoCapture(1)
+    else:
+        commandString = gstreamer_pipeline()
+        cap = cv2.VideoCapture(commandString, cv2.CAP_GSTREAMER)
+    ramp_frames = 10
+    for i in range(ramp_frames):
+        ret, ramp = cap.read()
+    try:
+        while True:
             data = conn.recv(6)
             if not data:
                 break  # Connection closed
             if not isRecordingStarted:
-                startRecording()
+                
+
+                recording_thread = startRecording(cap, run_event)
                 isRecordingStarted = True
             # Unpack the received data
             _, axis, value = struct.unpack('!BBf', data)
@@ -105,30 +111,22 @@ def server():
                     print(calculate_motor_speeds(x_axis_value, y_axis_value))
                 else: 
                     jetbot.set_motors(**calculate_motor_speeds(x_axis_value, y_axis_value))
-        finally:
-            break
+    except KeyboardInterrupt: 
+        run_event.clear()
+        if recording_thread: recording_thread.join()
+        conn.close()
 
 def calculate_motor_speeds(x, y):
-    """
-    Calculate motor speeds based on controller input.
-    x: left/right axis value (-1 to 1)
-    y: up/down axis value (-1 to 1)
-    Returns: (left_speed, right_speed)
-    """
-    # Convert x, y to polar coordinates
-    r = math.sqrt(x*x + y*y)
-    theta = math.atan2(y, x)
+    # Calculate left and right motor powers
+    left_power = (-y + x)
+    right_power = -y - x
 
-    # Calculate left and right motor speeds
-    left = r * math.sin(theta + math.pi/4)
-    right = r * math.sin(theta - math.pi/4)
-
-    # Normalize to [-1, 1]
-    max_value = max(abs(left), abs(right), 1)
-    left /= max_value
-    right /= max_value
-
-    return left, right
+    # Normalize powers to ensure they're within -1 to 1 range
+    max_power = max(abs(left_power), abs(right_power), 1)
+    left_power /= max_power
+    right_power /= max_power
+    
+    return left_power, right_power
 
 if __name__ == '__main__':
     server()
