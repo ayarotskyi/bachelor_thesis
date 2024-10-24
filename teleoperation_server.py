@@ -7,7 +7,6 @@ import os
 import math
 
 import cv2
-from gstreamer_pipeline import gstreamer_pipeline
 
 
 MOCK_SERVER = True
@@ -84,8 +83,8 @@ def server():
     if MOCK_SERVER:
         cap = cv2.VideoCapture(1)
     else:
-        commandString = gstreamer_pipeline()
-        cap = cv2.VideoCapture(commandString, cv2.CAP_GSTREAMER)
+        pipeline = "nvarguscamerasrc sensor-id=0 ! video/x-raw(memory:NVMM), width=640, height=480, format=(string)NV12, framerate=(fraction)30/1 ! nvvidconv ! video/x-raw, width=(int)640, height=(int)480, format=(string)BGRx ! videoconvert ! appsink"
+        cap = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
     ramp_frames = 10
     for i in range(ramp_frames):
         ret, ramp = cap.read()
@@ -110,16 +109,17 @@ def server():
                 if MOCK_SERVER:
                     print(calculate_motor_speeds(x_axis_value, y_axis_value))
                 else: 
-                    jetbot.set_motors(**calculate_motor_speeds(x_axis_value, y_axis_value))
+                    jetbot.set_motors(*calculate_motor_speeds(x_axis_value, y_axis_value))
     except KeyboardInterrupt: 
         run_event.clear()
         if recording_thread: recording_thread.join()
         conn.close()
 
 def calculate_motor_speeds(x, y):
+    rotation_quotient = 0.5
     # Calculate left and right motor powers
-    left_power = (-y + x)
-    right_power = -y - x
+    left_power = -y + x * rotation_quotient
+    right_power = -y - x * rotation_quotient
 
     # Normalize powers to ensure they're within -1 to 1 range
     max_power = max(abs(left_power), abs(right_power), 1)

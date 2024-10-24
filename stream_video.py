@@ -3,7 +3,6 @@ import cv2
 import pickle
 import sys
 import struct
-from gstreamer_pipeline import gstreamer_pipeline
 import threading
 
 # only works with python3
@@ -66,8 +65,8 @@ def client():
             cap.release()
 
     def take_video():
-        commandString = gstreamer_pipeline()
-        cap = cv2.VideoCapture(commandString, cv2.CAP_GSTREAMER)
+        pipeline = "nvarguscamerasrc sensor-id=0 ! video/x-raw(memory:NVMM), width=640, height=480, format=(string)NV12, framerate=(fraction)30/1 ! nvvidconv ! video/x-raw, width=(int)640, height=(int)480, format=(string)BGRx ! videoconvert ! appsink"
+        cap = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
 
         ramp_frames = 10
         for i in range(ramp_frames):
