@@ -2,6 +2,11 @@ import pygame
 import socket
 import struct
 import time
+import random
+import threading
+import os
+
+MOCK_GAMEPAD = True
 
 SERVER_ADDRESS = "127.0.0.1"  # Change this to your server's address
 SERVER_PORT = 8090  # Change this to your server's port
@@ -12,10 +17,14 @@ class GamepadSender:
         self.server_port = server_port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.running = False
+        self.running_lock = threading.Lock()
 
         # Initialize Pygame
         pygame.init()
         pygame.joystick.init()
+
+        if MOCK_GAMEPAD:
+            return
 
         # Check for available joysticks
         if pygame.joystick.get_count() == 0:
@@ -39,31 +48,81 @@ class GamepadSender:
     def send_event(self, axis, value):
         # Pack the event data into a struct
         # Format: 
-        # - B (unsigned char) for event type (1 byte, using 0 for axis events)
         # - B (unsigned char) for axis number (1 byte)
         # - f (float) for axis value (4 bytes)
-        packed_data = struct.pack('!BBf', 0, axis, value)
+        packed_data = struct.pack('!Bf', axis, value)
         
-        try:
-            self.sock.sendall(packed_data)
-            print(f"Sent axis event: Axis {axis}, Value {value:.2f}")
-        except Exception as e:
-            print(f"Failed to send event: {e}")
+        self.sock.sendall(packed_data)
+        print(f"Sent axis event: Axis {axis}, Value {value:.2f}")
+
+    def receive_file(self, path):
+        print("receiving", path)
+        filetodown = open(path, "a+b")
+        data = self.sock.recv(4)
+        filesize, = struct.unpack("!I", data)
+        while filesize > 0:
+            data = self.sock.recv(filesize if filesize < 1024 else 1024)
+            filetodown.write(data)
+            filesize -= 1024
+        filetodown.write(data)
+        filetodown.close()
+
+    def wait_for_data(self):
+        date_data = self.sock.recv(4)
+        self.running_lock.acquire()
+        self.running = False
+        date_timestamp, = struct.unpack("!f", date_data)
+        date = str(date_timestamp)
+        if not os.path.exists("outputs/"+date+"/images"):
+                os.makedirs("outputs/"+date+"/images")
+        self.receive_file("outputs/"+date+"/motor_values.npy")
+        while True:
+            try:
+                data = self.sock.recv(4)
+                if not data:
+                    break  # Connection closed
+                # Unpack the received data
+                image_index, = struct.unpack('!I', data)
+                self.receive_file("outputs/"+date+"/images/"+str(image_index)+".jpg")
+            except Exception as e:
+                print("something went wrong", e)
+                break
+        self.running_lock.release()
 
     def run(self):
-        self.running = True
-        while self.running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    self.running = False
-                elif event.type == pygame.JOYAXISMOTION:
-                    self.send_event(event.axis, event.value)
+        data_waiting_thread = threading.Thread(target=self.wait_for_data, args=())
+        data_waiting_thread.start()
+        with self.running_lock:
+            self.running = True
+        try:
+            if MOCK_GAMEPAD:
+                while self.running_lock.acquire() and self.running:
+                    self.running_lock.release()
+                    self.send_event(0, random.random())
+                    time.sleep(0.1)
+                self.running_lock.release()
+            else:
+                for event in pygame.event.get():
+                    with self.running_lock:
+                        if not self.running:
+                            break
 
-            # Add a small delay to reduce CPU usage
-            time.sleep(0.01)
-
+                    if event.type == pygame.QUIT:
+                        with self.running_lock:
+                            self.running = False
+                    elif event.type == pygame.JOYAXISMOTION:
+                        self.send_event(event.axis, event.value)
+                    # Add a small delay to reduce CPU usage
+                    time.sleep(0.01)
+        except:
+            print("Failed to send event")
+            with self.running_lock:
+                self.running = False
+            data_waiting_thread.join()
+            
     def stop(self):
-        self.running = False
+        with self.running_lock:
+            self.running = False
         pygame.quit()
         self.sock.close()
 

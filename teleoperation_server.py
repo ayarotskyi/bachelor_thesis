@@ -4,7 +4,9 @@ import threading
 import datetime
 import numpy as np
 import os
-import math
+from tqdm import tqdm
+import time
+import shutil
 
 import cv2
 
@@ -31,6 +33,9 @@ def server():
 
         jetbot = JetBot(left_motor, right_motor, save_recording=False)
 
+    
+    date = str(datetime.datetime.now().timestamp())
+
     s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     print('Socket created')
@@ -49,24 +54,33 @@ def server():
 
     isRecordingStarted = False
 
+
+    def send_file(sock, path):
+        filesize = os.path.getsize(path)
+        filetosend = open(path, "rb")
+        data = filetosend.read(1024)
+        sock.sendall(struct.pack("!I", filesize))
+        while data:
+            sock.sendall(data)
+            data = filetosend.read(1024)
+        filetosend.close()
+
     def startRecording(cap, run_event):
         def capture_frames(cap, event):
             motor_values = np.array([], dtype=[('left', np.float64), ('right', np.float64)])
-            date = str(datetime.datetime.now().timestamp())
             frameIndex = 0
-            if not os.path.exists("outputs/"+date+"/images"):
-                os.makedirs("outputs/"+date+"/images")
+            if not os.path.exists("temp/"+date+"/images"):
+                os.makedirs("temp/"+date+"/images")
             try:
                 while cap.isOpened() and event.is_set(): 
                     re, frame = cap.read()
-                    cv2.imwrite('outputs/'+date+'/images/+'+str(frameIndex)+'.jpg', frame)
+                    cv2.imwrite('temp/'+date+'/images/'+str(frameIndex)+'.jpg', frame)
                     with motor_lock:
                         motor_values = np.append(motor_values, np.array([(x_axis_value, y_axis_value)], dtype=motor_values.dtype))
                     frameIndex = frameIndex + 1
             finally:
-                print('Data is saved under outputs/'+date)
                 cap.release()
-                np.save('outputs/'+date+'/motor_values.npy', motor_values)
+                np.save('temp/'+date+'/motor_values.npy', motor_values)
     
         def take_video():
                 
@@ -90,16 +104,14 @@ def server():
         ret, ramp = cap.read()
     try:
         while True:
-            data = conn.recv(6)
+            data = conn.recv(5)
             if not data:
                 break  # Connection closed
             if not isRecordingStarted:
-                
-
                 recording_thread = startRecording(cap, run_event)
                 isRecordingStarted = True
             # Unpack the received data
-            _, axis, value = struct.unpack('!BBf', data)
+            axis, value = struct.unpack('!Bf', data)
 
             with motor_lock:
                 if axis == 0:
@@ -113,7 +125,15 @@ def server():
     except KeyboardInterrupt: 
         run_event.clear()
         if recording_thread: recording_thread.join()
+        conn.sendall(struct.pack("!f", float(date)))
+        send_file(conn, "temp/"+date+"/motor_values.npy")
+        for file in tqdm(os.listdir("temp/"+date+"/images")):
+            filename = os.fsdecode(file)
+            conn.sendall(struct.pack("!I", int(filename[:-4])))
+            send_file(conn,"temp/"+date+"/images/"+file)
+            time.sleep(0.1)
         conn.close()
+        shutil.rmtree("temp")
 
 def calculate_motor_speeds(x, y):
     rotation_quotient = 0.5
