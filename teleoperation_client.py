@@ -60,10 +60,9 @@ class GamepadSender:
         filetodown = open(path, "a+b")
         data = self.sock.recv(4)
         filesize, = struct.unpack("!I", data)
-        while filesize > 0:
-            data = self.sock.recv(filesize if filesize < 1024 else 1024)
-            filetodown.write(data)
-            filesize -= 1024
+        data = b""
+        while filesize > len(data):
+            data += self.sock.recv(filesize - len(data))
         filetodown.write(data)
         filetodown.close()
 
