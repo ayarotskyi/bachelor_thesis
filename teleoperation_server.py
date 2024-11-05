@@ -128,7 +128,7 @@ def server():
             jetbot.stop()
         if recording_thread: recording_thread.join()
         conn.sendall(struct.pack("!f", float(date)))
-        send_file(conn, "temp/"+date+"/motor_values.npy")
+        send_file(conn, "temp/"+date+"/data.npy")
         for file in tqdm(os.listdir("temp/"+date+"/images")):
             filename = os.fsdecode(file)
             conn.sendall(struct.pack("!I", int(filename[:-4])))
