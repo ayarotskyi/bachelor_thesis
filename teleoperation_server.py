@@ -124,6 +124,8 @@ def server():
                     jetbot.set_motors(*calculate_motor_speeds(x_axis_value, y_axis_value))
     except KeyboardInterrupt: 
         run_event.clear()
+        if jetbot:
+            jetbot.stop()
         if recording_thread: recording_thread.join()
         conn.sendall(struct.pack("!f", float(date)))
         send_file(conn, "temp/"+date+"/motor_values.npy")
