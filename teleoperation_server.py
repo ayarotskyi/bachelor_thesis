@@ -67,7 +67,7 @@ def server():
 
     def startRecording(cap, run_event):
         def capture_frames(cap, event):
-            motor_values = np.array([], dtype=[('left', np.float64), ('right', np.float64)])
+            drive_data = np.array([], dtype=[('x', np.float64), ('y', np.float64), ('timestamp', 'datetime64[ms]')])
             frameIndex = 0
             if not os.path.exists("temp/"+date+"/images"):
                 os.makedirs("temp/"+date+"/images")
@@ -76,11 +76,11 @@ def server():
                     re, frame = cap.read()
                     cv2.imwrite('temp/'+date+'/images/'+str(frameIndex)+'.jpg', frame)
                     with motor_lock:
-                        motor_values = np.append(motor_values, np.array([(x_axis_value, y_axis_value)], dtype=motor_values.dtype))
+                        drive_data = np.append(drive_data, np.array([(x_axis_value, y_axis_value, np.datetime64(datetime.datetime.now()))], dtype=drive_data.dtype))
                     frameIndex = frameIndex + 1
             finally:
                 cap.release()
-                np.save('temp/'+date+'/motor_values.npy', motor_values)
+                np.save('temp/'+date+'/data.npy', drive_data)
     
         def take_video():
                 
