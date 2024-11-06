@@ -90,21 +90,22 @@ class GamepadSender:
             if MOCK_GAMEPAD:
                 while self.running_lock.acquire() and self.running:
                     self.running_lock.release()
-                    self.send_event(0, random.random())
+                    self.send_event(1, random.random() - 0.5)
                     time.sleep(0.1)
                 self.running_lock.release()
             else:
-                for event in pygame.event.get():
-                    with self.running_lock:
-                        if not self.running:
-                            break
+                while True:
+                    for event in pygame.event.get():
+                        with self.running_lock:
+                            if not self.running:
+                                break
 
-                    if event.type == pygame.QUIT:
-                        raise Exception("QUIT")
-                    elif event.type == pygame.JOYAXISMOTION:
-                        self.send_event(event.axis, event.value)
-                    # Add a small delay to reduce CPU usage
-                    time.sleep(0.01)
+                        if event.type == pygame.QUIT:
+                            raise Exception("QUIT")
+                        elif event.type == pygame.JOYAXISMOTION:
+                            self.send_event(event.axis, event.value)
+                        # Add a small delay to reduce CPU usage
+                        time.sleep(0.01)
         except:
             print("Failed to send event")
             with self.running_lock:
