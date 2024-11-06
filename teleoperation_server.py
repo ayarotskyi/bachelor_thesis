@@ -34,7 +34,7 @@ def server():
         jetbot = JetBot(left_motor, right_motor, save_recording=False)
 
     
-    date = str(datetime.datetime.now().timestamp())
+    date = str(int(datetime.datetime.now().timestamp() * 1000))
 
     s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -107,6 +107,8 @@ def server():
             data = conn.recv(5)
             if not data:
                 break  # Connection closed
+            if data == b"STOP_":
+                raise Exception()
             if not isRecordingStarted:
                 recording_thread = startRecording(cap, run_event)
                 isRecordingStarted = True
@@ -122,12 +124,12 @@ def server():
                     print(calculate_motor_speeds(x_axis_value, y_axis_value))
                 else: 
                     jetbot.set_motors(*calculate_motor_speeds(x_axis_value, y_axis_value))
-    except KeyboardInterrupt: 
+    except: 
         run_event.clear()
         if jetbot:
             jetbot.stop()
         if recording_thread: recording_thread.join()
-        conn.sendall(struct.pack("!f", float(date)))
+        conn.sendall(struct.pack("!Q", int(date)))
         send_file(conn, "temp/"+date+"/data.npy")
         for file in tqdm(os.listdir("temp/"+date+"/images")):
             filename = os.fsdecode(file)

@@ -53,10 +53,8 @@ class GamepadSender:
         packed_data = struct.pack('!Bf', axis, value)
         
         self.sock.sendall(packed_data)
-        print(f"Sent axis event: Axis {axis}, Value {value:.2f}")
 
     def receive_file(self, path):
-        print("receiving", path)
         filetodown = open(path, "a+b")
         data = self.sock.recv(4)
         filesize, = struct.unpack("!I", data)
@@ -67,10 +65,8 @@ class GamepadSender:
         filetodown.close()
 
     def wait_for_data(self):
-        date_data = self.sock.recv(4)
-        self.running_lock.acquire()
-        self.running = False
-        date_timestamp, = struct.unpack("!f", date_data)
+        date_data = self.sock.recv(8)
+        date_timestamp, = struct.unpack("!Q", date_data)
         date = str(date_timestamp)
         if not os.path.exists("outputs/"+date+"/images"):
                 os.makedirs("outputs/"+date+"/images")
@@ -86,11 +82,8 @@ class GamepadSender:
             except Exception as e:
                 print("something went wrong", e)
                 break
-        self.running_lock.release()
 
     def run(self):
-        data_waiting_thread = threading.Thread(target=self.wait_for_data, args=())
-        data_waiting_thread.start()
         with self.running_lock:
             self.running = True
         try:
@@ -107,8 +100,7 @@ class GamepadSender:
                             break
 
                     if event.type == pygame.QUIT:
-                        with self.running_lock:
-                            self.running = False
+                        raise Exception("QUIT")
                     elif event.type == pygame.JOYAXISMOTION:
                         self.send_event(event.axis, event.value)
                     # Add a small delay to reduce CPU usage
@@ -117,7 +109,8 @@ class GamepadSender:
             print("Failed to send event")
             with self.running_lock:
                 self.running = False
-            data_waiting_thread.join()
+            self.sock.sendall(b"STOP_")
+            self.wait_for_data()
             
     def stop(self):
         with self.running_lock:
