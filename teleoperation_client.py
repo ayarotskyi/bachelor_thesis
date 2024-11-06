@@ -74,7 +74,7 @@ class GamepadSender:
         date = str(date_timestamp)
         if not os.path.exists("outputs/"+date+"/images"):
                 os.makedirs("outputs/"+date+"/images")
-        self.receive_file("outputs/"+date+"/motor_values.npy")
+        self.receive_file("outputs/"+date+"/data.npy")
         while True:
             try:
                 data = self.sock.recv(4)
