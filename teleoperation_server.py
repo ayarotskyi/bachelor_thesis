@@ -97,7 +97,7 @@ def server():
     if MOCK_SERVER:
         cap = cv2.VideoCapture(1)
     else:
-        pipeline = "nvarguscamerasrc sensor-id=0 ! video/x-raw(memory:NVMM), width=640, height=480, format=(string)NV12, framerate=(fraction)30/1 ! nvvidconv ! video/x-raw, width=(int)640, height=(int)480, format=(string)BGRx ! videoconvert ! appsink"
+        pipeline = "nvarguscamerasrc sensor-id=0 ! video/x-raw(memory:NVMM), width=640, height=480, format=(string)NV12, framerate=(fraction)120/1 ! nvvidconv ! video/x-raw, width=(int)640, height=(int)480, format=(string)BGRx ! videoconvert ! appsink"
         cap = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
     ramp_frames = 10
     for i in range(ramp_frames):
