@@ -37,9 +37,9 @@ class VehicleTrajectorySimulator:
         self.images = self.load_images(image_directory)
         
         # Vehicle and simulation parameters
-        self.wheel_base = 0.2  # meters
-        self.motor_efficiency = 0.77
-        self.speed_threashold = 0.35
+        self.wheel_base = 0.17  # meters
+        self.motor_efficiency = 0.67
+        self.speed_threashold = 0.30
         
         # Initial vehicle position (30cm from one long side)
         self.initial_x = 0
@@ -325,10 +325,11 @@ class VehicleTrajectorySimulator:
         pygame.quit()
 
 def main():
-    joystick_data = np.load("C:/Users/Kasutaja/Downloads/Telegram Desktop/outputs/outputs/1732198157153/data.npy")
+    path = "/Users/andrewyarotskyi/Downloads/outputs/1732198157153"
+    joystick_data = np.load(path+"/data.npy")
     
     # Create and run simulator
-    simulator = VehicleTrajectorySimulator(joystick_data, "C:/Users/Kasutaja/Downloads/Telegram Desktop/outputs/outputs/1732198157153/images")
+    simulator = VehicleTrajectorySimulator(joystick_data, path+"/images")
     simulator.run_simulation()
     # simulator.hyperparameter()
 
