@@ -3,8 +3,9 @@ import pygame
 import math
 import os
 from tqdm import tqdm
+import csv
 
-
+saved_image_index = 0
 class VehicleTrajectorySimulator:
     def __init__(self, joystick_data, image_directory, screen_width=800, screen_height=800):
         """
@@ -60,6 +61,8 @@ class VehicleTrajectorySimulator:
         self.RED = (255, 0, 0)
         self.BLUE = (0, 0, 255)
         self.GRAY = (200, 200, 200)
+
+        self.current_image_index = 0
     
     def load_images(self, directory):
         """
@@ -222,6 +225,48 @@ class VehicleTrajectorySimulator:
         print("speed threashold: ", best_speed_threashold)
         print("end point: x:", best_point_x, "y:", best_point_y)
         print("max diff:", best_diff)
+
+    def save_reduced_data(self):
+        global saved_image_index
+        if not os.path.exists("D:/bachelor arbeit/reduced_data/images"):
+            os.makedirs("D:/bachelor arbeit/reduced_data/images")
+        for image in self.images[:self.current_image_index]:
+            pygame.image.save(image, "D:/bachelor arbeit/reduced_data/images/"+str(saved_image_index)+".png")
+            saved_image_index = saved_image_index + 1
+        self.append_numpy_array_to_csv(self.joystick_data[:self.current_image_index], "D:/bachelor arbeit/reduced_data/data.csv")
+        pygame.event.post(pygame.event.Event(pygame.QUIT))
+
+    def append_numpy_array_to_csv(self, data, filename):
+        try:
+            start_time = data[0]['timestamp']
+            # Open the file in append mode
+            with open(filename, 'a', newline='') as csvfile:
+                # Create a CSV writer
+                csv_writer = csv.writer(csvfile)
+
+                # Check if the file is empty, if so, write the header
+                csvfile.seek(0, 2)  # Move to the end of the file
+                if csvfile.tell() == 0:
+                    csv_writer.writerow(['x', 'y', 'ms_from_start'])
+
+                # Convert each row to a format suitable for CSV writing
+                for row in data:
+                    diff_ms = (row['timestamp'] - start_time).astype('timedelta64[ms]')
+                    ms_from_start_str = str(diff_ms.astype('int'))
+
+                    # Write the row to the CSV file
+                    csv_writer.writerow([
+                        row['x'], 
+                        row['y'], 
+                        ms_from_start_str
+                    ])
+
+            print(f"Successfully appended {len(data)} rows to {filename}")
+
+        except IOError as e:
+            print(f"Error writing to CSV file: {e}")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
     
     def convert_to_screen_coords(self, x, y):
         """
@@ -239,9 +284,10 @@ class VehicleTrajectorySimulator:
         """
         Run the trajectory simulation and visualization.
         """
-        start_time = pygame.time.get_ticks()
+        previous_frame_time = pygame.time.get_ticks()
         running = True
-        simulation_speed = 1.0  # Adjustable simulation speed
+        simulation_speed = 0.0  # Adjustable simulation speed
+        elapsed_time = 0.0
         
         while running:
             for event in pygame.event.get():
@@ -252,22 +298,34 @@ class VehicleTrajectorySimulator:
                         simulation_speed *= 1.5
                     elif event.key == pygame.K_MINUS:
                         simulation_speed /= 1.5
+                    elif event.key == pygame.K_SPACE:
+                        if simulation_speed == 0:
+                            simulation_speed = 1.0
+                        else:
+                            simulation_speed = 0.0
+                    elif event.key == pygame.K_RIGHT:
+                        elapsed_time += 60
+                    elif event.key == pygame.K_LEFT:
+                        elapsed_time -= 60
+                    elif event.key == pygame.K_0:
+                        self.save_reduced_data()
             
             # Clear the screen
             self.screen.fill(self.WHITE)
             
             # Calculate elapsed time
-            elapsed_time = (pygame.time.get_ticks() - start_time) * simulation_speed
+            elapsed_time += (pygame.time.get_ticks() - previous_frame_time) * simulation_speed
+            previous_frame_time = pygame.time.get_ticks()
             
             # Determine current image index
-            current_image_index = min(
+            self.current_image_index = min(
                 int(elapsed_time / (self.joystick_data[-1]['timestamp'].astype('int64') - self.joystick_data[0]['timestamp'].astype('int64')) * len(self.images)), 
                 len(self.images) - 1
             )
             
             # Draw current image
             if self.images:
-                self.screen.blit(self.images[current_image_index], (0, self.SCREEN_HEIGHT // 2))
+                self.screen.blit(self.images[self.current_image_index], (0, self.SCREEN_HEIGHT // 2))
             
             # Draw simulation area border
             pygame.draw.rect(self.screen, self.GRAY, 
@@ -325,13 +383,14 @@ class VehicleTrajectorySimulator:
         pygame.quit()
 
 def main():
-    path = "/Users/andrewyarotskyi/Downloads/outputs/1732198157153"
-    joystick_data = np.load(path+"/data.npy")
-    
-    # Create and run simulator
-    simulator = VehicleTrajectorySimulator(joystick_data, path+"/images")
-    simulator.run_simulation()
-    # simulator.hyperparameter()
+    outputs_path = "D:/bachelor arbeit/outputs"
+    for path in os.listdir(outputs_path):
+        path = outputs_path + "/" + path
+        joystick_data = np.load(path+"/data.npy")
+
+        # Create and run simulator
+        simulator = VehicleTrajectorySimulator(joystick_data, path+"/images")
+        simulator.run_simulation()
 
 if __name__ == "__main__":
     main()
