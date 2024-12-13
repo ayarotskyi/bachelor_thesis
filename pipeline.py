@@ -1,26 +1,12 @@
-import matplotlib
-matplotlib.use('Agg')
 import json
-import csv
-import numpy as np
-import cv2
-import sklearn
-from sklearn.model_selection import train_test_split
-import os
-from sklearn.utils import shuffle
-import matplotlib.pyplot as plt
-
-
 from keras import Sequential
-from keras.api.layers import Flatten, Dense, Lambda, Cropping2D
-from keras.api.layers import Conv2D
-import os
-
+from keras.api.layers import Flatten, Dense, Lambda, Conv2D
+import keras
 import os
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
 import cv2
+import matplotlib as plt
 
 def preprocess_image(image_path):
     image = cv2.resize(cv2.imread(image_path, cv2.IMREAD_GRAYSCALE), (400, 200))[100:, :]
@@ -39,12 +25,10 @@ def preprocess_image(image_path):
 def prepare_image_data(
     image_dir, 
     csv_path, 
-    augment=True,
-    test_size=0.2,
-    random_state=42
 ):
     # 1. Read CSV file
     df = pd.read_csv(csv_path)
+    df_array = df.to_numpy()
     
     # 2. Prepare image and label lists
     images = []
@@ -52,37 +36,39 @@ def prepare_image_data(
     
     # 3. Load and preprocess images
     for index, row in df.iterrows():
-        # Construct image filename (assuming image name matches row index)
-        image_filename = f"{index}.png"  # Adjust extension as needed
-        image_path = os.path.join(image_dir, image_filename)
-        
-        # Check if image exists
-        if not os.path.exists(image_path):
-            print(f"Warning: Image {image_filename} not found. Skipping.")
-            continue
-        
         # Read and preprocess image
         try:
-            image_array = preprocess_image(image_path)
-            
-            images.append(image_array)
+            image_memory_stack = []
+            overflows_starting_timestamp = False
+            for i in range(0, 4):
+                current_index = index - i
+                image_filename = f"{current_index}.png"
+                image_path = os.path.join(image_dir, image_filename)
+                if (not overflows_starting_timestamp 
+                    and current_index > 0 
+                    and int(df_array[current_index][2]) > 0
+                    and os.path.exists(image_path)):
+                    image_memory_stack.append(preprocess_image(image_path))
+                else:
+                    overflows_starting_timestamp = True
+                    image_memory_stack.append(np.zeros((100, 400)))
+            images.append(np.concatenate(image_memory_stack))
             labels.append([float(row['x']), float(row['y'])])  # Adjust column name as needed
         
         except Exception as e:
-            print(f"Error processing {image_filename}: {e}")
+            print(f"Error processing: {e}")
         
     # Combine original and flipped images
     x_augmented = []
     y_augmented = []
     
-    for img, label in zip(images, labels):
+    for memory_stack, label in zip(images, labels):
         # Original image
-        x_augmented.append(img)
+        x_augmented.append(memory_stack)
         y_augmented.append(label)
         
-        # Horizontally flipped image
-        flipped_img = np.fliplr(img)
-        x_augmented.append(flipped_img)
+        flipped_memory_stack = np.fliplr(memory_stack)
+        x_augmented.append(flipped_memory_stack)
         y_augmented.append([label[1], label[0]])
     
     x = np.array(x_augmented)
@@ -92,37 +78,48 @@ def prepare_image_data(
 
 if __name__ == "__main__":
     # Example of how to use the function
-	x, y = prepare_image_data(
-		image_dir="D:/bachelor arbeit/reduced_data/images",
-		csv_path="D:/bachelor arbeit/reduced_data/data.csv",
-		augment=True
+    x, y = prepare_image_data(
+		image_dir="/Users/andrewyarotskyi/reduced_data/images",
+		csv_path="/Users/andrewyarotskyi/reduced_data/data.csv",
 	)
-	model = Sequential()
-	model.add(Lambda(lambda x: (x/255), input_shape = (100, 400)))
-	model.add(Conv2D(filters=24, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv1'))
-	model.add(Conv2D(filters=36, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv2'))
-	model.add(Conv2D(filters=48, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv3'))
-	model.add(Conv2D(filters=64, kernel_size=(3, 3), activation='relu', name='conv4'))
-	model.add(Conv2D(filters=64, kernel_size=(3, 3), activation='relu', name='conv5')) 
-	model.add(Flatten())
-	model.add(Dense(100))
-	model.add(Dense(50))
-	model.add(Dense(10))
-	model.add(Dense(2))
+    model = Sequential()
+    model.add(Lambda(lambda x: (x/255), input_shape = (400, 400, 1)))
+    model.add(Conv2D(filters=24, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv1'))
+    model.add(Conv2D(filters=36, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv2'))
+    model.add(Conv2D(filters=48, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv3'))
+    model.add(Conv2D(filters=64, kernel_size=(3, 3), activation='relu', name='conv4'))
+    model.add(Conv2D(filters=64, kernel_size=(3, 3), activation='relu', name='conv5')) 
+    model.add(Flatten())
+    model.add(Dense(100))
+    model.add(Dense(50))
+    model.add(Dense(10))
+    model.add(Dense(2)) 
 
-	model.compile(loss = 'mse', optimizer = 'adam')
-	print("starting training")
-	history_object = model.fit(x=x, y=y, batch_size=32,validation_split=0.2, shuffle=True)
-	model.save('model_nvid_angle.h5')
-	outfile = open('./model_nvid_angle.json', 'w') 
-	json.dump(model.to_json(), outfile)
-	outfile.close()
-	model.save_weights('model_nvid_angle_weights.h5')
+    model.compile(loss = 'mse', optimizer = 'adam')
 
-	# print(history_object.history.keys())
-	# fig = plt.figure()
-	# plt.plot(history_object.history['loss'])
-	# plt.plot(history_object.history['val_loss'])
-	# plt.ylabel('Mean Squared Error Loss')
-	# plt.xlabel('Epoch')
-	# fig.savefig('test_val_ac_angle1.png')
+    history= model.fit(x=x, 
+                       y=y, 
+                       batch_size=32,
+                       validation_split=0.3, 
+                       shuffle=True, 
+                       epochs=100, 
+                       callbacks=[
+        keras.callbacks.EarlyStopping(
+            monitor='val_loss', 
+            patience=10,  # Stops if no improvement for 10 epochs
+            restore_best_weights=True
+        )
+    ])
+    model.save('model.h5')
+    outfile = open('./model_nvid_angle.json', 'w') 
+    json.dump(model.to_json(), outfile)
+    outfile.close()
+    model.save_weights('model.weights.h5')  
+
+    plt.plot(history.history['loss'], label='Training Loss')
+    plt.plot(history.history['val_loss'], label='Validation Loss')
+    plt.title('Model Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.show()
