@@ -1,6 +1,6 @@
 import json
 from keras import Sequential
-from keras.api.layers import Flatten, Dense, Lambda, Conv2D
+from keras.layers import Flatten, Dense, Lambda, Conv2D
 import keras
 import os
 import numpy as np
@@ -22,65 +22,70 @@ def preprocess_image(image_path):
                              apertureSize=5)
     return canny_edges
 
-def prepare_image_data(
-    image_dir, 
-    csv_path, 
+def prepare_image_data_generator(
+    image_dir,
+    csv_path,
+    batch_size=32
 ):
     # 1. Read CSV file
     df = pd.read_csv(csv_path)
     df_array = df.to_numpy()
-    
-    # 2. Prepare image and label lists
-    images = []
-    labels = []
-    
-    # 3. Load and preprocess images
-    for index, row in df.iterrows():
-        # Read and preprocess image
-        try:
-            image_memory_stack = []
-            overflows_starting_timestamp = False
-            for i in range(0, 4):
-                current_index = index - i
-                image_filename = f"{current_index}.png"
-                image_path = os.path.join(image_dir, image_filename)
-                if (not overflows_starting_timestamp 
-                    and current_index > 0 
-                    and int(df_array[current_index][2]) > 0
-                    and os.path.exists(image_path)):
-                    image_memory_stack.append(preprocess_image(image_path))
-                else:
-                    overflows_starting_timestamp = True
-                    image_memory_stack.append(np.zeros((100, 400)))
-            images.append(np.concatenate(image_memory_stack))
-            labels.append([float(row['x']), float(row['y'])])  # Adjust column name as needed
-        
-        except Exception as e:
-            print(f"Error processing: {e}")
-        
-    # Combine original and flipped images
-    x_augmented = []
-    y_augmented = []
-    
-    for memory_stack, label in zip(images, labels):
-        # Original image
-        x_augmented.append(memory_stack)
-        y_augmented.append(label)
-        
-        flipped_memory_stack = np.fliplr(memory_stack)
-        x_augmented.append(flipped_memory_stack)
-        y_augmented.append([label[1], label[0]])
-    
-    x = np.array(x_augmented)
-    y = np.array(y_augmented)
-    
-    return x, y
+
+    def data_generator():
+        images = []
+        labels = []
+
+        for index, row in df.iterrows():
+            try:
+                # Read and preprocess image memory stack
+                image_memory_stack = []
+                overflows_starting_timestamp = False
+                for i in range(0, 4):
+                    current_index = index - i
+                    image_filename = f"{current_index}.png"
+                    image_path = os.path.join(image_dir, image_filename)
+
+                    if (
+                        not overflows_starting_timestamp
+                        and current_index > 0
+                        and int(df_array[current_index][2]) > 0
+                        and os.path.exists(image_path)
+                    ):
+                        image_memory_stack.append(preprocess_image(image_path))
+                    else:
+                        overflows_starting_timestamp = True
+                        image_memory_stack.append(np.zeros((100, 400)))
+
+                # Combine memory stack and add to list
+                combined_image = np.concatenate(image_memory_stack)
+                images.append(combined_image)
+                labels.append([float(row['x']), float(row['y'])])  # Adjust column names as needed
+
+                # Augmentation: flipped image
+                flipped_memory_stack = np.fliplr(combined_image)
+                images.append(flipped_memory_stack)
+                labels.append([float(row['y']), float(row['x'])])
+
+                # Yield batch if size matches batch_size
+                if len(images) >= batch_size:
+                    yield np.array(images), np.array(labels)
+                    images = []
+                    labels = []
+
+            except Exception as e:
+                print(f"Error processing: {e}")
+
+        # Yield any remaining data
+        if images:
+            yield np.array(images), np.array(labels)
+
+    return data_generator()
 
 if __name__ == "__main__":
     # Example of how to use the function
-    x, y = prepare_image_data(
-		image_dir="/Users/andrewyarotskyi/reduced_data/images",
-		csv_path="/Users/andrewyarotskyi/reduced_data/data.csv",
+    data_generator = prepare_image_data_generator(
+		image_dir="D:/bachelor arbeit/reduced_data/images",
+		csv_path="D:/bachelor arbeit/reduced_data/data.csv",
 	)
     model = Sequential()
     model.add(Lambda(lambda x: (x/255), input_shape = (400, 400, 1)))
@@ -97,10 +102,8 @@ if __name__ == "__main__":
 
     model.compile(loss = 'mse', optimizer = 'adam')
 
-    history= model.fit(x=x, 
-                       y=y, 
+    history= model.fit(x=data_generator, 
                        batch_size=32,
-                       validation_split=0.3, 
                        shuffle=True, 
                        epochs=100, 
                        callbacks=[
