@@ -25,67 +25,79 @@ def preprocess_image(image_path):
 def prepare_image_data_generator(
     image_dir,
     csv_path,
-    batch_size=32
+    batch_size=32,
+    test_split=0.2
 ):
     # 1. Read CSV file
-    df = pd.read_csv(csv_path)
-    df_array = df.to_numpy()
+    array = pd.read_csv(csv_path).to_numpy()
+    timestamp_array = array[:, 2]
+    array = np.column_stack((array, np.arange(len(array))))
+    np.random.shuffle(array)
+    split_index = int(len(array)*(1 - test_split))
+    train_array, test_array = array[:split_index], array[split_index:]
 
-    def data_generator():
-        images = []
-        labels = []
+    def data_generator(array, shuffle):
+        def returning_generator():
+            while True:  # Add an infinite loop to enable multiple epochs
+                # Optionally shuffle the dataframe at the start of each epoch
+                if shuffle:
+                    np.random.shuffle(array)
 
-        for index, row in df.iterrows():
-            try:
-                # Read and preprocess image memory stack
-                image_memory_stack = []
-                overflows_starting_timestamp = False
-                for i in range(0, 4):
-                    current_index = index - i
-                    image_filename = f"{current_index}.png"
-                    image_path = os.path.join(image_dir, image_filename)
+                images = []
+                labels = []
 
-                    if (
-                        not overflows_starting_timestamp
-                        and current_index > 0
-                        and int(df_array[current_index][2]) > 0
-                        and os.path.exists(image_path)
-                    ):
-                        image_memory_stack.append(preprocess_image(image_path))
-                    else:
-                        overflows_starting_timestamp = True
-                        image_memory_stack.append(np.zeros((100, 400)))
+                for row in array:
+                    try:
+                        # Read and preprocess image memory stack
+                        image_memory_stack = []
+                        overflows_starting_timestamp = False
+                        for i in range(0, 4):
+                            current_index = int(row[3]) - i
+                            image_filename = f"{current_index}.png"
+                            image_path = os.path.join(image_dir, image_filename)
+                            if (
+                                not overflows_starting_timestamp
+                                and current_index > 0
+                                and int(timestamp_array[current_index]) > 0
+                                and os.path.exists(image_path)
+                            ):
+                                image_memory_stack.append(preprocess_image(image_path))
+                            else:
+                                overflows_starting_timestamp = True
+                                image_memory_stack.append(np.zeros((100, 400)))
 
-                # Combine memory stack and add to list
-                combined_image = np.concatenate(image_memory_stack)
-                images.append(combined_image)
-                labels.append([float(row['x']), float(row['y'])])  # Adjust column names as needed
+                        # Combine memory stack and add to list
+                        combined_image = np.concatenate(image_memory_stack)
+                        images.append(combined_image)
+                        labels.append([float(row[0]), float(row[1])])  # Adjust column names as needed
 
-                # Augmentation: flipped image
-                flipped_memory_stack = np.fliplr(combined_image)
-                images.append(flipped_memory_stack)
-                labels.append([float(row['y']), float(row['x'])])
+                        # Augmentation: flipped image
+                        flipped_memory_stack = np.fliplr(combined_image)
+                        images.append(flipped_memory_stack)
+                        labels.append([-float(row[0]), float(row[1])])
 
-                # Yield batch if size matches batch_size
-                if len(images) >= batch_size:
+                        # Yield batch if size matches batch_size
+                        if len(images) >= batch_size:
+                            yield np.array(images), np.array(labels)
+                            images = []
+                            labels = []
+
+                    except Exception as e:
+                        print(f"Error processing: {e}")
+
+                # Yield any remaining data
+                if images:
                     yield np.array(images), np.array(labels)
-                    images = []
-                    labels = []
+        return returning_generator()
 
-            except Exception as e:
-                print(f"Error processing: {e}")
-
-        # Yield any remaining data
-        if images:
-            yield np.array(images), np.array(labels)
-
-    return data_generator()
+    return data_generator(train_array, True), data_generator(test_array, False)
 
 if __name__ == "__main__":
     # Example of how to use the function
-    data_generator = prepare_image_data_generator(
+    train_generator, test_generator = prepare_image_data_generator(
 		image_dir="D:/bachelor arbeit/reduced_data/images",
 		csv_path="D:/bachelor arbeit/reduced_data/data.csv",
+        batch_size=200
 	)
     model = Sequential()
     model.add(Lambda(lambda x: (x/255), input_shape = (400, 400, 1)))
@@ -102,8 +114,12 @@ if __name__ == "__main__":
 
     model.compile(loss = 'mse', optimizer = 'adam')
 
-    history= model.fit(x=data_generator, 
-                       batch_size=32,
+    history= model.fit(x=train_generator,
+                       validation_data=test_generator,
+                       validation_batch_size=200,
+                       validation_steps=13,
+                       batch_size=200,
+                       steps_per_epoch=55,
                        shuffle=True, 
                        epochs=100, 
                        callbacks=[
@@ -114,7 +130,7 @@ if __name__ == "__main__":
         )
     ])
     model.save('model.h5')
-    outfile = open('./model_nvid_angle.json', 'w') 
+    outfile = open('./model.json', 'w') 
     json.dump(model.to_json(), outfile)
     outfile.close()
     model.save_weights('model.weights.h5')  
