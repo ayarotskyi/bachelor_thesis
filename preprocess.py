@@ -40,7 +40,6 @@ def edge_detection_pipeline(image_path):
                              threshold1=lower_threshold, 
                              threshold2=upper_threshold, 
                              apertureSize=5)
-    print(canny_edges)
     
     # 4. Sobel Edge Detection (X and Y directions)
     sobel_x = cv2.Sobel(enhanced, cv2.CV_64F, 1, 0, ksize=5)
@@ -75,7 +74,8 @@ def edge_detection_pipeline(image_path):
         'sobel_edges': sobel_normalized,
         'log_edges': log_normalized,
         'morphological_edges': morphological_gradient,
-        'sobel_canny': sobel_canny
+        'sobel_canny': sobel_canny,
+        'original_uncut': cv2.resize(cv2.imread(image_path, cv2.IMREAD_GRAYSCALE), (400, 200))
     }
     
     return results
@@ -94,8 +94,8 @@ def visualize_results(results):
         if img.shape[0] > 800 or img.shape[1] > 1200:
             scale = min(800/img.shape[0], 1200/img.shape[1])
             img = cv2.resize(img, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
-        
-        cv2.imshow(name, img)
+        cv2.imwrite("samples/"+name+".png", img)
+        # cv2.imshow(name, img)
     
     cv2.waitKey(0)
     cv2.destroyAllWindows()
@@ -104,7 +104,7 @@ def visualize_results(results):
 if __name__ == "__main__":
     try:
         # Replace with the path to your blurry image
-        image_path = "D:/bachelor arbeit/reduced_data/images/423.png"
+        image_path = "D:/bachelor arbeit/reduced_data/images/419.png"
         
         # Run edge detection pipeline
         edge_results = edge_detection_pipeline(image_path)
