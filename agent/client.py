@@ -11,6 +11,8 @@ import time
 HOST = '127.0.0.1'
 PORT = 8089
 MOCK_JETBOT = True
+STREAM_VIDEO = False
+FINISHED = False
 
 global_image = None
 global_prediction = None
@@ -41,7 +43,7 @@ def calculate_motor_speeds(x, y):
     return left_power, right_power
 
 def predict(cap):
-    global global_image, global_prediction
+    global global_image, global_prediction, FINISHED
     memory_stack = MemoryStack()
 
     if MOCK_JETBOT:
@@ -80,6 +82,7 @@ def predict(cap):
         # time_delta = updated_time - current_time
         # current_time = updated_time
         # print("fps: " + str( 1_000_000_000 / time_delta))
+    FINISHED = True
 
 def start_prediction_thread():
     pipeline = "nvarguscamerasrc sensor-id=0 ! video/x-raw(memory:NVMM), width=640, height=480, format=(string)NV12, framerate=(fraction)30/1 ! nvvidconv ! video/x-raw, width=(int)640, height=(int)480, format=(string)BGRx ! videoconvert ! appsink"
@@ -95,13 +98,17 @@ def send_video_frames():
 
     clientsocket=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     clientsocket.connect((HOST,PORT))
+    clientsocket.send(b"a" if STREAM_VIDEO else b"b")
 
     while global_image is None or global_prediction is None:
         continue
-    while True:
+    while STREAM_VIDEO:
         data = pickle.dumps(global_image) ### new code
         clientsocket.sendall(struct.pack("L", len(data))+data+struct.pack("ff", global_prediction[0], global_prediction[1]))
-
+    if not STREAM_VIDEO:
+        while not FINISHED:
+            time.sleep(1)
+        
 def start_socket_thread():
     thread = threading.Thread(target=send_video_frames)
     return thread
@@ -110,8 +117,8 @@ if __name__ == '__main__':
     try:
         prediction_thread, cap = start_prediction_thread()
         prediction_thread.start()
-        # socket_thread = start_socket_thread()
-        # socket_thread.start()
+        socket_thread = start_socket_thread()
+        socket_thread.start()
         while True:
             time.sleep(1)
     except KeyboardInterrupt:

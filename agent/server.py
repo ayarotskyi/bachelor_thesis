@@ -22,6 +22,20 @@ if __name__ == '__main__':
     
     conn,addr=s.accept()
     print('Connection accepted')
+
+    first_byte = conn.recv(1)
+
+    if first_byte == b'a':
+        def receive_file(self, path):
+            filetodown = open(path, "a+b")
+            data = conn.recv(4)
+            filesize, = struct.unpack("!I", data)
+            data = b""
+            while filesize > len(data):
+                data += conn.recv(filesize - len(data))
+            filetodown.write(data)
+            filetodown.close()
+        
     
     data = b'' ### CHANGED
     payload_size = struct.calcsize("L") ### CHANGED
