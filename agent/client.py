@@ -7,6 +7,8 @@ import socket
 import multiprocessing
 import pickle
 import struct
+import sys
+import time
 
 HOST = '127.0.0.1'
 PORT = 8089
@@ -68,7 +70,7 @@ def predict(cap, queue: multiprocessing.Queue):
 
         prediction = prediction[0]
         data = pickle.dumps(frame) ### new code
-        queue.put(struct.pack("L", len(data))+data+struct.pack("ff", prediction[0], prediction[1]))
+        queue.put(struct.pack("L", len(data))+data+struct.pack("fff", prediction[0], prediction[1], time.time()))
 
         if jetbot is not None:
             jetbot.set_motors(*calculate_motor_speeds(prediction[0], prediction[1]))
@@ -79,7 +81,6 @@ def predict(cap, queue: multiprocessing.Queue):
         # time_delta = updated_time - current_time
         # current_time = updated_time
         # print("fps: " + str( 1_000_000_000 / time_delta))
-    FINISHED = True
 
 def start_prediction(queue: multiprocessing.Queue):
     pipeline = "nvarguscamerasrc sensor-id=0 ! video/x-raw(memory:NVMM), width=640, height=480, format=(string)NV12, framerate=(fraction)30/1 ! nvvidconv ! video/x-raw, width=(int)640, height=(int)480, format=(string)BGRx ! videoconvert ! appsink"
@@ -88,15 +89,17 @@ def start_prediction(queue: multiprocessing.Queue):
     for i in range(ramp_frames):
         ret, ramp = cap.read()
     predict(cap=cap, queue=queue)
-    return cap
 
 def sender_process_handle(queue: multiprocessing.Queue):
     clientsocket=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     clientsocket.connect((HOST,PORT))
 
-    while True:
-        data = queue.get()
-        clientsocket.send(data)
+    try:
+        while True:
+            data = queue.get()
+            clientsocket.send(data)
+    except:
+        clientsocket.close()
 
 
 def start_sender_process(queue: multiprocessing.Queue):
@@ -111,4 +114,18 @@ if __name__ == '__main__':
 
         start_prediction(queue=queue)
     except KeyboardInterrupt:
-        sender_process.kill()
+        # kill the process
+        if sender_process.is_alive():
+            sender_process.kill()
+        sender_process.join()
+
+        # Drain the queue before closing
+        while not queue.empty():
+            try:
+                queue.get_nowait()
+            except:
+                break
+        queue.cancel_join_thread()
+        queue.close()
+
+        sys.exit(0)
