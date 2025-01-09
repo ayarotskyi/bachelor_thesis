@@ -29,8 +29,8 @@ def receive_data(process_pool, conn: socket.socket):
     global run_data
 
     data = b'' ### CHANGED
-    payload_size = struct.calcsize("L") ### CHANGED
-    predictions_size = struct.calcsize("fff")
+    payload_size = struct.calcsize("!L") ### CHANGED
+    predictions_size = struct.calcsize("!fff")
 
     index = 0
 
@@ -42,7 +42,7 @@ def receive_data(process_pool, conn: socket.socket):
 
         packed_msg_size = data[:payload_size]
         data = data[payload_size:]
-        msg_size = struct.unpack("L", packed_msg_size)[0] ### CHANGED
+        msg_size = struct.unpack("!L", packed_msg_size)[0] ### CHANGED
 
         # Retrieve all data based on message size
         while len(data) < msg_size:
@@ -56,7 +56,7 @@ def receive_data(process_pool, conn: socket.socket):
 
         packed_predictions = data[:predictions_size]
         data = data[predictions_size:]
-        x, y, timestamp = struct.unpack("fff", packed_predictions)
+        x, y, timestamp = struct.unpack("!fff", packed_predictions)
 
         # Extract frame
         frame = pickle.loads(frame_data)
