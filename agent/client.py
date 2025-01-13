@@ -9,6 +9,7 @@ import pickle
 import struct
 import sys
 import time
+import keyboard
 
 HOST = '127.0.0.1'
 PORT = 8089
@@ -61,8 +62,19 @@ def predict(cap, queue: multiprocessing.Queue):
     model_path = os.path.join(script_dir, os.path.pardir, 'model.h5')
     model = load_model(model_path)
 
+    enter_pressed = False
+
     # current_time = time.time_ns()
     while cap.isOpened(): 
+        try:
+            if keyboard.is_pressed('q'):
+                enter_pressed = True
+        except:
+            pass
+
+        if enter_pressed:
+            raise Exception("Finish")
+
         re, frame = cap.read()
         preprocessed_stack = memory_stack.push(frame)
         input_image = preprocessed_stack.reshape(1, 400, 400, 1)
@@ -75,7 +87,7 @@ def predict(cap, queue: multiprocessing.Queue):
         if jetbot is not None:
             jetbot.set_motors(*calculate_motor_speeds(prediction[0], prediction[1]))
         else:
-            print("Predicted joystick position: ", calculate_motor_speeds(prediction[0], prediction[1]))
+            pass
         
         # updated_time = time.time_ns()
         # time_delta = updated_time - current_time
@@ -113,7 +125,7 @@ if __name__ == '__main__':
         sender_process = start_sender_process(queue)
 
         start_prediction(queue=queue)
-    except KeyboardInterrupt:
+    except:
         # kill the process
         if sender_process.is_alive():
             sender_process.kill()
