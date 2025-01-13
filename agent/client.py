@@ -82,7 +82,7 @@ def predict(cap, queue: multiprocessing.Queue):
 
         prediction = prediction[0]
         data = pickle.dumps(frame) ### new code
-        queue.put(struct.pack("L", len(data))+data+struct.pack("fff", prediction[0], prediction[1], time.time()))
+        queue.put(struct.pack("!L", len(data))+data+struct.pack("!fff", prediction[0], prediction[1], time.time()))
 
         if jetbot is not None:
             jetbot.set_motors(*calculate_motor_speeds(prediction[0], prediction[1]))
