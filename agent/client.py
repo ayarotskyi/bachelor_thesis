@@ -1,5 +1,4 @@
 import multiprocessing.connection
-import keras
 import os
 import cv2
 from memory_stack import MemoryStack
@@ -9,72 +8,24 @@ import pickle
 import struct
 import sys
 import time
-import keyboard
+import utils
 
 HOST = '127.0.0.1'
 PORT = 8089
-MOCK_JETBOT = True
 
-
-def load_model(model_path: str) -> keras.Model:
-    # Check if model file exists
-    if not os.path.exists(model_path):
-        raise FileNotFoundError(f"Model file not found at: {model_path}")
-    
-    try:
-        # Load the model
-        model = keras.models.load_model(model_path)
-        return model
-    except Exception as e:
-        raise Exception(f"Error loading model: {str(e)}")
-    
-def calculate_motor_speeds(x, y):
-    rotation_quotient = 0.5
-    # Calculate left and right motor powers
-    left_power = -y + x * rotation_quotient
-    right_power = -y - x * rotation_quotient
-
-    # Normalize powers to ensure they're within -1 to 1 range
-    max_power = max(abs(left_power), abs(right_power), 1)
-    left_power /= max_power
-    right_power /= max_power
-    
-    return left_power, right_power
+jetbot = None
 
 def predict(cap, queue: multiprocessing.Queue):
+    global jetbot
     memory_stack = MemoryStack()
 
-    if MOCK_JETBOT:
-        jetbot = None
-    else:
-        i2c_bus = 1
-        left_channel = 1
-        right_channel = 2
-        from motor import Motor
-        from jetbot import JetBot
-        from Adafruit_MotorHAT import Adafruit_MotorHAT
-        driver = Adafruit_MotorHAT(i2c_bus=i2c_bus)
-        left_motor = Motor(driver, left_channel)
-        right_motor = Motor(driver, right_channel)
-        jetbot = JetBot(left_motor, right_motor, save_recording=False)
+    jetbot = utils.init_jetbot()
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     model_path = os.path.join(script_dir, os.path.pardir, 'model.h5')
-    model = load_model(model_path)
+    model = utils.load_model(model_path)
 
-    enter_pressed = False
-
-    # current_time = time.time_ns()
     while cap.isOpened(): 
-        try:
-            if keyboard.is_pressed('q'):
-                enter_pressed = True
-        except:
-            pass
-
-        if enter_pressed:
-            raise Exception("Finish")
-
         re, frame = cap.read()
         preprocessed_stack = memory_stack.push(frame)
         input_image = preprocessed_stack.reshape(1, 400, 400, 1)
@@ -85,14 +36,9 @@ def predict(cap, queue: multiprocessing.Queue):
         queue.put(struct.pack("!L", len(data))+data+struct.pack("!fff", prediction[0], prediction[1], time.time()))
 
         if jetbot is not None:
-            jetbot.set_motors(*calculate_motor_speeds(prediction[0], prediction[1]))
+            jetbot.set_motors(*utils.calculate_motor_speeds(prediction[0], prediction[1]))
         else:
             pass
-        
-        # updated_time = time.time_ns()
-        # time_delta = updated_time - current_time
-        # current_time = updated_time
-        # print("fps: " + str( 1_000_000_000 / time_delta))
 
 def start_prediction(queue: multiprocessing.Queue):
     pipeline = "nvarguscamerasrc sensor-id=0 ! video/x-raw(memory:NVMM), width=640, height=480, format=(string)NV12, framerate=(fraction)30/1 ! nvvidconv ! video/x-raw, width=(int)640, height=(int)480, format=(string)BGRx ! videoconvert ! appsink"
@@ -126,9 +72,6 @@ if __name__ == '__main__':
 
         start_prediction(queue=queue)
     except:
-        # kill the process
-        if sender_process.is_alive():
-            sender_process.kill()
         sender_process.join()
 
         # Drain the queue before closing
@@ -137,6 +80,8 @@ if __name__ == '__main__':
                 queue.get_nowait()
             except:
                 break
+        if jetbot:
+            jetbot.stop()
         queue.cancel_join_thread()
         queue.close()
 

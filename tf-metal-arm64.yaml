@@ -1,0 +1,17 @@
+name: tf-metal
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.11  ## specify desired version
+  - pip
+
+  ## uncomment for use with Jupyter
+  ## - ipykernel
+
+  ## PyPI packages
+  - pip:
+    - tensorflow==2.13.0
+    - tensorflow-metal==1.0.0
+    - opencv-python
+    - numpy==1.24.3

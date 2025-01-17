@@ -2,7 +2,7 @@ import socket
 import cv2
 import pickle
 import struct
-from client import calculate_motor_speeds
+from utils import calculate_motor_speeds
 import numpy as np
 import os
 import datetime
