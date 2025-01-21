@@ -22,6 +22,17 @@ def preprocess_image(image_path):
                              apertureSize=5)
     return canny_edges
 
+def get_desired_frames_mask(ms_array, desired_frame_rate):
+    mask = np.ones(len(ms_array), dtype=bool)
+    max_ms_between_elements = (1 / desired_frame_rate) * 1000
+    prev_index = 0
+    for i in range(1, len(ms_array)):
+        if ms_array[i] > ms_array[prev_index] and ms_array[i] - ms_array[prev_index] < max_ms_between_elements:
+            mask[i] = False
+        else:
+            prev_index = i
+    return mask
+
 def prepare_image_data_generator(
     image_dir,
     csv_path,
@@ -32,6 +43,7 @@ def prepare_image_data_generator(
     array = pd.read_csv(csv_path).to_numpy()
     timestamp_array = array[:, 2]
     array = np.column_stack((array, np.arange(len(array))))
+    array = array[get_desired_frames_mask(array[:, 2], 17)]
     np.random.shuffle(array)
     split_index = int(len(array)*(1 - test_split))
     train_array, test_array = array[:split_index], array[split_index:]
