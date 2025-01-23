@@ -1,6 +1,3 @@
-from Adafruit_MotorHAT import Adafruit_MotorHAT
-from motor import Motor
-from camera import Camera
 import atexit
 import math
 import time
