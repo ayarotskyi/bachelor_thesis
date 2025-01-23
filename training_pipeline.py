@@ -1,6 +1,6 @@
 import json
 from keras import Sequential
-from keras.layers import Flatten, Dense, Lambda, Conv2D
+from keras.layers import Flatten, Dense, Lambda, ConvLSTM2D, BatchNormalization
 import keras
 import os
 import numpy as np
@@ -111,18 +111,28 @@ if __name__ == "__main__":
 		csv_path="D:/bachelor arbeit/reduced_data/data.csv",
         batch_size=200
 	)
-    model = Sequential()
-    model.add(Lambda(lambda x: (x/255), input_shape = (400, 400, 1)))
-    model.add(Conv2D(filters=24, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv1'))
-    model.add(Conv2D(filters=36, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv2'))
-    model.add(Conv2D(filters=48, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv3'))
-    model.add(Conv2D(filters=64, kernel_size=(3, 3), activation='relu', name='conv4'))
-    model.add(Conv2D(filters=64, kernel_size=(3, 3), activation='relu', name='conv5')) 
-    model.add(Flatten())
-    model.add(Dense(100))
-    model.add(Dense(50))
-    model.add(Dense(10))
-    model.add(Dense(2)) 
+    model = Sequential([
+    # Preprocessing layer
+    Lambda(lambda x: x/255, input_shape=(4, 400, 100, 1)),
+    
+    # Replace Conv2D with ConvLSTM2D
+    ConvLSTM2D(24, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv_lstm1'),
+    BatchNormalization(),
+    ConvLSTM2D(36, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv_lstm2'),
+    BatchNormalization(),
+    ConvLSTM2D(48, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv_lstm3'),
+    ConvLSTM2D(64, kernel_size=(3, 3), activation='relu', name='conv_lstm4'),
+    ConvLSTM2D(64, kernel_size=(3, 3), activation='relu', name='conv_lstm5'),
+    
+    # Flatten temporal features
+    Flatten(),
+    
+    # Dense layers remain similar
+    Dense(100,),
+    Dense(50),
+    Dense(10),
+    Dense(2, activation='tanh') # Ensures final output in [-1, 1]
+])
 
     model.compile(loss = 'mse', optimizer = 'adam')
 

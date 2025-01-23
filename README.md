@@ -1,11 +1,13 @@
 # TODO
 
-Train the model with larq and without larq on these datasets:
+- Add controls data to the memory stack
+- Switch from stacking images to using LSTM layers (or Conv3D in larq)
+- Train the model with larq and without larq on these datasets:
 
-1. Using only data for the first difficulty without mirroring
-2. Using only data for the first difficulty with mirroring (using updated dataset)
-3. Using all the data available without mirroring
-4. Using all the data available with mirroring
+1. Using only data for the first difficulty without collisions handling (until row 15010 in the updated dataset)
+2. Using only data for the first difficulty with collisions handling (until row 16642)
+3. Using all the data available
+4. All the previous options with mirorring
 
 If non-binary variant is better, test with other edge detectors
 
