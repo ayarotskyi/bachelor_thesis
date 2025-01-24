@@ -2,15 +2,20 @@ import numpy as np
 import cv2
 
 class MemoryStack():
-    MAX_STACK_SIZE = 4
-    stack = None
+    size = None
+    stack: np.ndarray = None
+    max_size = None
 
-    def __init__(self):
-        self.stack = np.zeros((400, 400))
+    def __init__(self, stack_size = 4):
+        self.stack = np.zeros((stack_size, 100, 400))
+        self.max_size = stack_size
+        self.size = 0
 
     def push(self, image):
         preprocessed_image = self.preprocess(image)
-        self.stack = np.concatenate((preprocessed_image, self.stack[:300, :]))
+        self.stack = np.concatenate([self.stack[1:], [preprocessed_image]])
+        if self.size < self.stack.shape[0]:
+            self.size += 1
         return self.stack
 
     def preprocess(self, image):
