@@ -6,7 +6,7 @@ import os
 import numpy as np
 import pandas as pd
 import cv2
-import matplotlib as plt
+import matplotlib.pyplot as plt
 from agent.memory_stack import MemoryStack
 import math
 
