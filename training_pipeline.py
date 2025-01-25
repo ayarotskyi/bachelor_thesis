@@ -1,6 +1,6 @@
 import json
 from keras import Sequential
-from keras.layers import Flatten, Dense, Lambda, ConvLSTM2D, BatchNormalization
+from keras.layers import Flatten, Dense, Lambda, ConvLSTM2D, BatchNormalization, TimeDistributed
 import keras
 import os
 import numpy as np
@@ -8,6 +8,7 @@ import pandas as pd
 import cv2
 import matplotlib as plt
 from agent.memory_stack import MemoryStack
+import math
 
 def prepare_image_data_generator(
     image_dir,
@@ -16,7 +17,7 @@ def prepare_image_data_generator(
     test_split=0.2
 ):
     # 1. Read CSV file
-    array = pd.read_csv(csv_path).to_numpy()[:15008]
+    array = pd.read_csv(csv_path).to_numpy()[:16640]
     timestamp_array = array[:, 2]
     array = np.column_stack((array, np.arange(len(array))))
     np.random.shuffle(array)
@@ -80,13 +81,13 @@ def prepare_image_data_generator(
                     yield np.array(images), np.array(labels)
         return returning_generator()
 
-    return data_generator(train_array, True), data_generator(test_array, False)
+    return data_generator(train_array, True), data_generator(test_array, False), len(train_array), len(test_array)
 
 if __name__ == "__main__":
     # Example of how to use the function
-    train_generator, test_generator = prepare_image_data_generator(
-		image_dir="D:/bachelor arbeit/reduced_data/images",
-		csv_path="D:/bachelor arbeit/reduced_data/data.csv",
+    train_generator, test_generator, train_array_length, test_array_length = prepare_image_data_generator(
+		image_dir="/Users/andrewyarotskyi/Downloads/reduced_data/images",
+		csv_path="/Users/andrewyarotskyi/Downloads/reduced_data/data.csv",
         batch_size=32
 	)
     model = Sequential([
@@ -94,10 +95,10 @@ if __name__ == "__main__":
 
         ConvLSTM2D(24, kernel_size=(5, 5), strides=(2, 2), activation='relu', 
                    data_format='channels_last', name='conv_lstm1', return_sequences=True),
-        BatchNormalization(),
+        TimeDistributed(BatchNormalization()),
         ConvLSTM2D(36, kernel_size=(5, 5), strides=(2, 2), activation='relu', 
                    data_format='channels_last', name='conv_lstm2', return_sequences=True),
-        BatchNormalization(),
+        TimeDistributed(BatchNormalization()),
         ConvLSTM2D(48, kernel_size=(5, 5), strides=(2, 2), activation='relu', 
                    data_format='channels_last', name='conv_lstm3', return_sequences=True),
         ConvLSTM2D(64, kernel_size=(3, 3), activation='relu', 
@@ -118,8 +119,9 @@ if __name__ == "__main__":
     history= model.fit(x=train_generator,
                        validation_data=test_generator,
                        validation_batch_size=32,
-                       validation_steps=13,
+                       validation_steps=math.ceil(test_array_length / 32),
                        batch_size=32,
+                       steps_per_epoch=math.ceil(train_array_length / 32),
                        epochs=100, 
                        callbacks=[
         keras.callbacks.EarlyStopping(
