@@ -14,10 +14,11 @@ def prepare_image_data_generator(
     image_dir,
     csv_path,
     batch_size=32,
-    test_split=0.2
+    test_split=0.2,
+    mirror_images=False
 ):
     # 1. Read CSV file
-    array = pd.read_csv(csv_path).to_numpy()[:16640]
+    array = pd.read_csv(csv_path).to_numpy()[:15008]
     timestamp_array = array[:, 2]
     array = np.column_stack((array, np.arange(len(array))))
     np.random.shuffle(array)
@@ -62,10 +63,11 @@ def prepare_image_data_generator(
                         images.append(combined_image)
                         labels.append([float(row[0]), float(row[1])])  # Adjust column names as needed
 
-                        # Augmentation: flipped image
-                        # flipped_memory_stack = np.fliplr(combined_image)
-                        # images.append(flipped_memory_stack)
-                        # labels.append([-float(row[0]), float(row[1])])
+                        if mirror_images:
+                            # Augmentation: flipped image
+                            flipped_memory_stack = np.flip(combined_image, 2)
+                            images.append(flipped_memory_stack)
+                            labels.append([-float(row[0]), float(row[1])])
 
                         # Yield batch if size matches batch_size
                         if len(images) >= batch_size:
@@ -81,14 +83,15 @@ def prepare_image_data_generator(
                     yield np.array(images), np.array(labels)
         return returning_generator()
 
-    return data_generator(train_array, True), data_generator(test_array, False), len(train_array), len(test_array)
+    return data_generator(train_array, True), data_generator(test_array, False), len(train_array) * (2 if mirror_images else 1), len(test_array) * (2 if mirror_images else 1)
 
 if __name__ == "__main__":
     # Example of how to use the function
     train_generator, test_generator, train_array_length, test_array_length = prepare_image_data_generator(
-		image_dir="/Users/andrewyarotskyi/Downloads/reduced_data/images",
-		csv_path="/Users/andrewyarotskyi/Downloads/reduced_data/data.csv",
-        batch_size=32
+		image_dir="D:/bachelor arbeit/reduced_data/images",
+		csv_path="D:/bachelor arbeit/reduced_data/data.csv",
+        batch_size=32,
+        mirror_images=True
 	)
     model = Sequential([
         Lambda(lambda x: x/255, input_shape=(4, 100, 400, 1)),
