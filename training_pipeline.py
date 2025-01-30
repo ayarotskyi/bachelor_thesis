@@ -21,7 +21,7 @@ def prepare_image_data_generator(
 ):
     global MEMORY_STACK_MAX_SIZE
     # 1. Read CSV file
-    array = pd.read_csv(csv_path).to_numpy()[:15008]
+    array = pd.read_csv(csv_path).to_numpy()[:16640]
     timestamp_array = array[:, 2]
     array = np.column_stack((array, np.arange(len(array))))
     np.random.shuffle(array)
@@ -32,8 +32,8 @@ def prepare_image_data_generator(
         def returning_generator():
             while True:  # Add an infinite loop to enable multiple epochs
                 # Optionally shuffle the dataframe at the start of each epoch
-                # if shuffle:
-                #     np.random.shuffle(array)
+                if shuffle:
+                    np.random.shuffle(array)
 
                 images = []
                 labels = []
@@ -95,8 +95,8 @@ def prepare_image_data_generator(
 if __name__ == "__main__":
     # Example of how to use the function
     train_generator, test_generator, train_array_length, test_array_length = prepare_image_data_generator(
-		image_dir="D:/bachelor arbeit/reduced_data/images",
-		csv_path="D:/bachelor arbeit/reduced_data/data.csv",
+		image_dir="/Users/andrewyarotskyi/Downloads/reduced_data/images",
+		csv_path="/Users/andrewyarotskyi/Downloads/reduced_data/data.csv",
         batch_size=32,
         mirror_images=False
 	)
