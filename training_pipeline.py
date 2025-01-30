@@ -52,7 +52,7 @@ def prepare_image_data_generator(
 
                             if os.path.exists(image_path) and (
                                 next_timestamp == None or
-                                (next_timestamp - current_timestamp) > 1000 * 1/17 # 17fps is the frame rate on which the agent is able to operate
+                                (next_timestamp - current_timestamp) > 1000 * 1/13 # 13fps is the frame rate on which the agent is able to operate
                             ):
                                 image_memory_stack[:-1] = image_memory_stack[1:]
                                 image_memory_stack[-1] = MemoryStack.preprocess(cv2.imread(image_path))
@@ -98,7 +98,7 @@ if __name__ == "__main__":
 		image_dir="D:/bachelor arbeit/reduced_data/images",
 		csv_path="D:/bachelor arbeit/reduced_data/data.csv",
         batch_size=32,
-        mirror_images=True
+        mirror_images=False
 	)
     model = Sequential([
         Lambda(lambda x: x/255, input_shape=(4, 100, 400, 1)),
