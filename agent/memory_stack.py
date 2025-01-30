@@ -18,7 +18,8 @@ class MemoryStack():
             self.size += 1
         return self.stack
 
-    def preprocess(self, image):
+    @staticmethod
+    def preprocess(image):
         image = cv2.resize(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY), (400, 200))[100:, :]
         blurred = cv2.GaussianBlur(image, (15, 15), 10)
         median_intensity = np.median(blurred)

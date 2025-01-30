@@ -1,29 +1,90 @@
 import os
+from enum import Enum
 
-def load_model(model_path: str):
+ModelVersion = Enum('ModelVersion', [('TEST', 0), ('LSTM', 1), ('LARQ', 2)])
+
+def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM):
     try:
-        import keras
+        from keras import Sequential
+        from keras.layers import Flatten, Dense, Lambda, ConvLSTM2D, BatchNormalization, TimeDistributed, Conv2D
     except:
-        import tensorflow.keras as keras
+        from tensorflow.keras import Sequential
+        from tensorflow.keras.layers import Flatten, Dense, Lambda, ConvLSTM2D, BatchNormalization, TimeDistributed, Conv2D
+    import larq as lq
     
     # Check if model file exists
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"Model file not found at: {model_path}")
     
     try:
-        model = keras.Sequential()
-        model.add(keras.layers.Lambda(lambda x: (x/255), input_shape = (400, 400, 1)))
-        model.add(keras.layers.Conv2D(filters=24, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv1'))
-        model.add(keras.layers.Conv2D(filters=36, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv2'))
-        model.add(keras.layers.Conv2D(filters=48, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv3'))
-        model.add(keras.layers.Conv2D(filters=64, kernel_size=(3, 3), activation='relu', name='conv4'))
-        model.add(keras.layers.Conv2D(filters=64, kernel_size=(3, 3), activation='relu', name='conv5')) 
-        model.add(keras.layers.Flatten())
-        model.add(keras.layers.Dense(100))
-        model.add(keras.layers.Dense(50))
-        model.add(keras.layers.Dense(10))
-        model.add(keras.layers.Dense(2))
-        
+        if model_version == ModelVersion.TEST:
+            model = Sequential()
+            model.add(Lambda(lambda x: (x/255), input_shape = (400, 400, 1)))
+            model.add(Conv2D(filters=24, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv1'))
+            model.add(Conv2D(filters=36, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv2'))
+            model.add(Conv2D(filters=48, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv3'))
+            model.add(Conv2D(filters=64, kernel_size=(3, 3), activation='relu', name='conv4'))
+            model.add(Conv2D(filters=64, kernel_size=(3, 3), activation='relu', name='conv5')) 
+            model.add(Flatten())
+            model.add(Dense(100))
+            model.add(Dense(50))
+            model.add(Dense(10))
+            model.add(Dense(2))
+        elif model_version == ModelVersion.LSTM:
+            model = Sequential([
+                Lambda(lambda x: x/255, input_shape=(4, 100, 400, 1)),
+                ConvLSTM2D(24, kernel_size=(5, 5), strides=(2, 2), activation='relu', 
+                           data_format='channels_last', name='conv_lstm1', return_sequences=True),
+                TimeDistributed(BatchNormalization()),
+                ConvLSTM2D(36, kernel_size=(5, 5), strides=(2, 2), activation='relu', 
+                           data_format='channels_last', name='conv_lstm2', return_sequences=True),
+                TimeDistributed(BatchNormalization()),
+                ConvLSTM2D(48, kernel_size=(5, 5), strides=(2, 2), activation='relu', 
+                           data_format='channels_last', name='conv_lstm3', return_sequences=True),
+                ConvLSTM2D(64, kernel_size=(3, 3), activation='relu', 
+                           data_format='channels_last', name='conv_lstm4', return_sequences=True),
+                ConvLSTM2D(64, kernel_size=(3, 3), activation='relu', 
+                           data_format='channels_last', name='conv_lstm5'),
+                Flatten(),
+                Dense(100),
+                Dense(50),
+                Dense(10),
+                Dense(2, activation='tanh')
+            ])
+        elif model_version == ModelVersion.LARQ:
+            model = Sequential([
+                # Normalize input
+                Lambda(lambda x: x / 255, input_shape=(4, 100, 400, 1)),
+                # QuantConv3D layers
+                lq.layers.QuantConv3D(24, kernel_size=(3, 5, 5), strides=(1, 2, 2), activation='relu',
+                                      input_quantizer="ste_sign", kernel_quantizer="ste_sign",
+                                      kernel_constraint="weight_clip", name='quant_conv3d_1'),
+                BatchNormalization(),
+                lq.layers.QuantConv3D(36, kernel_size=(3, 5, 5), strides=(1, 2, 2), activation='relu',
+                                      input_quantizer="ste_sign", kernel_quantizer="ste_sign",
+                                      kernel_constraint="weight_clip", name='quant_conv3d_2'),
+                BatchNormalization(),
+                lq.layers.QuantConv3D(48, kernel_size=(3, 5, 5), strides=(1, 2, 2), activation='relu',
+                                      input_quantizer="ste_sign", kernel_quantizer="ste_sign",
+                                      kernel_constraint="weight_clip", name='quant_conv3d_3'),
+                BatchNormalization(),
+                lq.layers.QuantConv3D(64, kernel_size=(3, 3, 3), activation='relu',
+                                      input_quantizer="ste_sign", kernel_quantizer="ste_sign",
+                                      kernel_constraint="weight_clip", name='quant_conv3d_4'),
+                BatchNormalization(),
+                # Flatten the output
+                Flatten(),
+                # Quantized Dense layers
+                lq.layers.QuantDense(100, input_quantizer="ste_sign", kernel_quantizer="ste_sign",
+                                     kernel_constraint="weight_clip"),
+                lq.layers.QuantDense(50, input_quantizer="ste_sign", kernel_quantizer="ste_sign",
+                                     kernel_constraint="weight_clip"),
+                lq.layers.QuantDense(10, input_quantizer="ste_sign", kernel_quantizer="ste_sign",
+                                     kernel_constraint="weight_clip"),
+                # Output layer (not quantized)
+                Dense(2, activation='tanh')
+            ])
+
         model.load_weights(model_path)
         return model
     except Exception as e:

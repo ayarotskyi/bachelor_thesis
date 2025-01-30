@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 from agent.memory_stack import MemoryStack
 import math
 
+MEMORY_STACK_MAX_SIZE = 4
+
 def prepare_image_data_generator(
     image_dir,
     csv_path,
@@ -17,6 +19,7 @@ def prepare_image_data_generator(
     test_split=0.2,
     mirror_images=False
 ):
+    global MEMORY_STACK_MAX_SIZE
     # 1. Read CSV file
     array = pd.read_csv(csv_path).to_numpy()[:15008]
     timestamp_array = array[:, 2]
@@ -29,8 +32,8 @@ def prepare_image_data_generator(
         def returning_generator():
             while True:  # Add an infinite loop to enable multiple epochs
                 # Optionally shuffle the dataframe at the start of each epoch
-                if shuffle:
-                    np.random.shuffle(array)
+                # if shuffle:
+                #     np.random.shuffle(array)
 
                 images = []
                 labels = []
@@ -38,10 +41,11 @@ def prepare_image_data_generator(
                 for row in array:
                     try:
                         # Read and preprocess image memory stack
-                        image_memory_stack = MemoryStack()
-                        current_index = 3
+                        image_memory_stack = np.zeros((MEMORY_STACK_MAX_SIZE, 100, 400))
+                        stack_size = 0
+                        current_index = int(row[3])
                         next_timestamp = None
-                        while image_memory_stack.size < image_memory_stack.max_size:
+                        while stack_size < MEMORY_STACK_MAX_SIZE:
                             image_filename = f"{current_index}.png"
                             image_path = os.path.join(image_dir, image_filename)
                             current_timestamp = int(timestamp_array[current_index])
@@ -50,16 +54,19 @@ def prepare_image_data_generator(
                                 next_timestamp == None or
                                 (next_timestamp - current_timestamp) > 1000 * 1/17 # 17fps is the frame rate on which the agent is able to operate
                             ):
-                                image_memory_stack.push(cv2.imread(image_path))
+                                image_memory_stack[:-1] = image_memory_stack[1:]
+                                image_memory_stack[-1] = MemoryStack.preprocess(cv2.imread(image_path))
+                                stack_size += 1
                                 next_timestamp = current_timestamp
 
 
                             if current_timestamp == 0:
                                 break
                             current_index -= 1
+                        image_memory_stack[MEMORY_STACK_MAX_SIZE - stack_size:] = image_memory_stack[MEMORY_STACK_MAX_SIZE - stack_size:][::-1]
 
                         # Combine memory stack and add to list
-                        combined_image = image_memory_stack.stack[::-1]
+                        combined_image = image_memory_stack
                         images.append(combined_image)
                         labels.append([float(row[0]), float(row[1])])  # Adjust column names as needed
 
