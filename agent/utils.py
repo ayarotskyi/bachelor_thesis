@@ -10,7 +10,7 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
     except:
         from tensorflow.keras import Sequential
         from tensorflow.keras.layers import Flatten, Dense, Lambda, ConvLSTM2D, BatchNormalization, TimeDistributed, Conv2D
-    import larq as lq
+    from larq.layers import QuantConv3D
     
     # Check if model file exists
     if not os.path.exists(model_path):
@@ -53,35 +53,30 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
             ])
         elif model_version == ModelVersion.LARQ:
             model = Sequential([
-                # Normalize input
                 Lambda(lambda x: x / 255, input_shape=(4, 100, 400, 1)),
-                # QuantConv3D layers
-                lq.layers.QuantConv3D(24, kernel_size=(3, 5, 5), strides=(1, 2, 2), activation='relu',
-                                      input_quantizer="ste_sign", kernel_quantizer="ste_sign",
-                                      kernel_constraint="weight_clip", name='quant_conv3d_1'),
+
+                QuantConv3D(24, kernel_size=(3, 5, 5), strides=(1, 2, 2),
+                            activation='relu', name='quant_conv3d_1', use_bias=False, padding="same"),
                 BatchNormalization(),
-                lq.layers.QuantConv3D(36, kernel_size=(3, 5, 5), strides=(1, 2, 2), activation='relu',
-                                      input_quantizer="ste_sign", kernel_quantizer="ste_sign",
-                                      kernel_constraint="weight_clip", name='quant_conv3d_2'),
+
+                QuantConv3D(36, kernel_size=(3, 5, 5), strides=(1, 2, 2),
+                            activation='relu', name='quant_conv3d_2', use_bias=False, padding="same"),
                 BatchNormalization(),
-                lq.layers.QuantConv3D(48, kernel_size=(3, 5, 5), strides=(1, 2, 2), activation='relu',
-                                      input_quantizer="ste_sign", kernel_quantizer="ste_sign",
-                                      kernel_constraint="weight_clip", name='quant_conv3d_3'),
+
+                QuantConv3D(48, kernel_size=(3, 5, 5), strides=(1, 2, 2),
+                            activation='relu', name='quant_conv3d_3', use_bias=False, padding="same"),
                 BatchNormalization(),
-                lq.layers.QuantConv3D(64, kernel_size=(3, 3, 3), activation='relu',
-                                      input_quantizer="ste_sign", kernel_quantizer="ste_sign",
-                                      kernel_constraint="weight_clip", name='quant_conv3d_4'),
-                BatchNormalization(),
-                # Flatten the output
+
+                QuantConv3D(64, kernel_size=(3, 3, 3), activation='relu',
+                            name='quant_conv3d_4', use_bias=False, padding="same"),
+
+                QuantConv3D(64, kernel_size=(3, 3, 3), activation='relu',
+                            name='quant_conv3d_5', use_bias=False, padding="same"),
+
                 Flatten(),
-                # Quantized Dense layers
-                lq.layers.QuantDense(100, input_quantizer="ste_sign", kernel_quantizer="ste_sign",
-                                     kernel_constraint="weight_clip"),
-                lq.layers.QuantDense(50, input_quantizer="ste_sign", kernel_quantizer="ste_sign",
-                                     kernel_constraint="weight_clip"),
-                lq.layers.QuantDense(10, input_quantizer="ste_sign", kernel_quantizer="ste_sign",
-                                     kernel_constraint="weight_clip"),
-                # Output layer (not quantized)
+                Dense(100),
+                Dense(50),
+                Dense(10),
                 Dense(2, activation='tanh')
             ])
 

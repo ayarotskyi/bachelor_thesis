@@ -9,6 +9,7 @@ import cv2
 import matplotlib.pyplot as plt
 from agent.memory_stack import MemoryStack
 import math
+from larq.layers import QuantConv3D
 
 MEMORY_STACK_MAX_SIZE = 4
 
@@ -21,7 +22,7 @@ def prepare_image_data_generator(
 ):
     global MEMORY_STACK_MAX_SIZE
     # 1. Read CSV file
-    array = pd.read_csv(csv_path).to_numpy()[:16640]
+    array = pd.read_csv(csv_path).to_numpy()[:15008]
     timestamp_array = array[:, 2]
     array = np.column_stack((array, np.arange(len(array))))
     np.random.shuffle(array)
@@ -52,7 +53,7 @@ def prepare_image_data_generator(
 
                             if os.path.exists(image_path) and (
                                 next_timestamp == None or
-                                (next_timestamp - current_timestamp) > 1000 * 1/13 # 13fps is the frame rate on which the agent is able to operate
+                                (next_timestamp - current_timestamp) > 1000 * 1/15 # 15fps is the frame rate on which the agent is able to operate
                             ):
                                 image_memory_stack[:-1] = image_memory_stack[1:]
                                 image_memory_stack[-1] = MemoryStack.preprocess(cv2.imread(image_path))
@@ -95,34 +96,38 @@ def prepare_image_data_generator(
 if __name__ == "__main__":
     # Example of how to use the function
     train_generator, test_generator, train_array_length, test_array_length = prepare_image_data_generator(
-		image_dir="/Users/andrewyarotskyi/Downloads/reduced_data/images",
-		csv_path="/Users/andrewyarotskyi/Downloads/reduced_data/data.csv",
+		image_dir="D:/bachelor arbeit/reduced_data/images",
+		csv_path="D:/bachelor arbeit/reduced_data/data.csv",
         batch_size=32,
         mirror_images=False
 	)
     model = Sequential([
-        Lambda(lambda x: x/255, input_shape=(4, 100, 400, 1)),
-
-        ConvLSTM2D(24, kernel_size=(5, 5), strides=(2, 2), activation='relu', 
-                   data_format='channels_last', name='conv_lstm1', return_sequences=True),
-        TimeDistributed(BatchNormalization()),
-        ConvLSTM2D(36, kernel_size=(5, 5), strides=(2, 2), activation='relu', 
-                   data_format='channels_last', name='conv_lstm2', return_sequences=True),
-        TimeDistributed(BatchNormalization()),
-        ConvLSTM2D(48, kernel_size=(5, 5), strides=(2, 2), activation='relu', 
-                   data_format='channels_last', name='conv_lstm3', return_sequences=True),
-        ConvLSTM2D(64, kernel_size=(3, 3), activation='relu', 
-                   data_format='channels_last', name='conv_lstm4', return_sequences=True),
-        ConvLSTM2D(64, kernel_size=(3, 3), activation='relu', 
-                   data_format='channels_last', name='conv_lstm5'),
-
-        Flatten(),
-
-        Dense(100),
-        Dense(50),
-        Dense(10),
-        Dense(2, activation='tanh')
-    ])
+    Lambda(lambda x: x / 255, input_shape=(4, 100, 400, 1)),
+    
+    QuantConv3D(24, kernel_size=(3, 5, 5), strides=(1, 2, 2),
+                activation='relu', name='quant_conv3d_1', use_bias=False, padding="same"),
+    BatchNormalization(),
+    
+    QuantConv3D(36, kernel_size=(3, 5, 5), strides=(1, 2, 2),
+                activation='relu', name='quant_conv3d_2', use_bias=False, padding="same"),
+    BatchNormalization(),
+    
+    QuantConv3D(48, kernel_size=(3, 5, 5), strides=(1, 2, 2),
+                activation='relu', name='quant_conv3d_3', use_bias=False, padding="same"),
+    BatchNormalization(),
+    
+    QuantConv3D(64, kernel_size=(3, 3, 3), activation='relu',
+                name='quant_conv3d_4', use_bias=False, padding="same"),
+    
+    QuantConv3D(64, kernel_size=(3, 3, 3), activation='relu',
+                name='quant_conv3d_5', use_bias=False, padding="same"),
+    
+    Flatten(),
+    Dense(100),
+    Dense(50),
+    Dense(10),
+    Dense(2, activation='tanh')
+])
 
     model.compile(loss = 'mse', optimizer = 'adam')
 
