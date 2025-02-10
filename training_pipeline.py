@@ -1,6 +1,6 @@
 import json
 from keras import Sequential
-from keras.layers import Flatten, Dense, Lambda, ConvLSTM2D, BatchNormalization, TimeDistributed
+from keras.layers import Flatten, Dense, BatchNormalization, MaxPooling3D
 import keras
 import os
 import numpy as np
@@ -9,7 +9,7 @@ import cv2
 import matplotlib.pyplot as plt
 from agent.memory_stack import MemoryStack
 import math
-from larq.layers import QuantConv3D
+from larq.layers import QuantConv3D, QuantDense
 
 MEMORY_STACK_MAX_SIZE = 4
 
@@ -53,7 +53,7 @@ def prepare_image_data_generator(
 
                             if os.path.exists(image_path) and (
                                 next_timestamp == None or
-                                (next_timestamp - current_timestamp) > 1000 * 1/15 # 15fps is the frame rate on which the agent is able to operate
+                                (next_timestamp - current_timestamp) > 1000 * 1/16 # 16fps is the frame rate on which the agent is able to operate
                             ):
                                 image_memory_stack[:-1] = image_memory_stack[1:]
                                 image_memory_stack[-1] = MemoryStack.preprocess(cv2.imread(image_path))
@@ -88,7 +88,7 @@ def prepare_image_data_generator(
 
                 # Yield any remaining data
                 if images:
-                    yield np.array(images), np.array(labels)
+                    yield np.array(images) / 127.5 - 1, np.array(labels)
         return returning_generator()
 
     return data_generator(train_array, True), data_generator(test_array, False), len(train_array) * (2 if mirror_images else 1), len(test_array) * (2 if mirror_images else 1)
@@ -101,31 +101,49 @@ if __name__ == "__main__":
         batch_size=32,
         mirror_images=False
 	)
+    kwargs = dict(input_quantizer="ste_sign",
+              kernel_quantizer="ste_sign",
+              kernel_constraint="weight_clip",
+              use_bias=False)
     model = Sequential([
-    Lambda(lambda x: x / 255, input_shape=(4, 100, 400, 1)),
-    
     QuantConv3D(24, kernel_size=(3, 5, 5), strides=(1, 2, 2),
-                activation='relu', name='quant_conv3d_1', use_bias=False, padding="same"),
-    BatchNormalization(),
+                name='quant_conv3d_1', 
+                kernel_quantizer="ste_sign",
+                kernel_constraint="weight_clip",
+                use_bias=False,
+                padding="same", 
+                input_shape=(4, 100, 400, 1)),
+    BatchNormalization(momentum=0.999, scale=False),
     
     QuantConv3D(36, kernel_size=(3, 5, 5), strides=(1, 2, 2),
-                activation='relu', name='quant_conv3d_2', use_bias=False, padding="same"),
-    BatchNormalization(),
+                name='quant_conv3d_2', padding="same", **kwargs),
+    MaxPooling3D(pool_size=(1, 2, 2), padding="same"),
+    BatchNormalization(momentum=0.999, scale=False),
     
     QuantConv3D(48, kernel_size=(3, 5, 5), strides=(1, 2, 2),
-                activation='relu', name='quant_conv3d_3', use_bias=False, padding="same"),
-    BatchNormalization(),
+                name='quant_conv3d_3', padding="same", **kwargs),
+    MaxPooling3D(pool_size=(1, 2, 2), padding="same"),
+    BatchNormalization(momentum=0.999, scale=False),
     
-    QuantConv3D(64, kernel_size=(3, 3, 3), activation='relu',
-                name='quant_conv3d_4', use_bias=False, padding="same"),
+    QuantConv3D(64, kernel_size=(3, 3, 3),
+                name='quant_conv3d_4', padding="same", **kwargs),
+    MaxPooling3D(pool_size=(1, 2, 2), padding="same"),
+    BatchNormalization(momentum=0.999, scale=False),
     
-    QuantConv3D(64, kernel_size=(3, 3, 3), activation='relu',
-                name='quant_conv3d_5', use_bias=False, padding="same"),
-    
+    QuantConv3D(64, kernel_size=(3, 3, 3),
+                name='quant_conv3d_5', padding="same", **kwargs),
+    MaxPooling3D(pool_size=(1, 2, 2), padding="same"),
+    BatchNormalization(momentum=0.999, scale=False),
     Flatten(),
-    Dense(100),
-    Dense(50),
-    Dense(10),
+
+    QuantDense(1024, **kwargs),
+    BatchNormalization(momentum=0.999, scale=False),
+
+    QuantDense(1024, **kwargs),
+    BatchNormalization(momentum=0.999, scale=False),
+
+    QuantDense(10, **kwargs),
+    BatchNormalization(momentum=0.999, scale=False),
     Dense(2, activation='tanh')
 ])
 
