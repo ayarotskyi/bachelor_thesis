@@ -1,20 +1,16 @@
 import os
 from enum import Enum
 
-ModelVersion = Enum('ModelVersion', [('TEST', 0), ('LSTM', 1), ('LARQ', 2)])
+ModelVersion = Enum('ModelVersion', [('TEST', 0), ('LSTM', 1), ('LARQ', 2), ('LARQV2', 3), ('LARQV3', 4)])
 
 def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM):
     try:
         from keras import Sequential
-        from keras.layers import Flatten, Dense, Lambda, ConvLSTM2D, BatchNormalization, TimeDistributed, Conv2D, MaxPooling3D
+        from keras.layers import Flatten, Dense, Lambda, ConvLSTM2D, BatchNormalization, TimeDistributed, Conv2D, MaxPooling3D, GlobalAveragePooling3D, Dropout
     except:
         from tensorflow.keras import Sequential
-        from tensorflow.keras.layers import Flatten, Dense, Lambda, ConvLSTM2D, BatchNormalization, TimeDistributed, Conv2D, MaxPooling3D
+        from tensorflow.keras.layers import Flatten, Dense, Lambda, ConvLSTM2D, BatchNormalization, TimeDistributed, Conv2D, MaxPooling3D, GlobalAveragePooling3D, Dropout
     from larq.layers import QuantConv3D, QuantDense
-    
-    # Check if model file exists
-    if not os.path.exists(model_path):
-        raise FileNotFoundError(f"Model file not found at: {model_path}")
     
     try:
         if model_version == ModelVersion.TEST:
@@ -97,8 +93,94 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
                 BatchNormalization(momentum=0.999, scale=False),
                 Dense(2, activation='tanh')
             ])
+        # fps: 10-12
+        elif model_version == ModelVersion.LARQV2:
+            kwargs = dict(input_quantizer="ste_sign",
+              kernel_quantizer="ste_sign",
+              kernel_constraint="weight_clip",
+              use_bias=False)
 
-        model.load_weights(model_path)
+            model = Sequential([
+                QuantConv3D(24, kernel_size=(3, 3, 3), strides=(1, 2, 2),
+                            name='quant_conv3d_1', padding="same", input_shape=(10, 100, 400, 1), **kwargs),
+                BatchNormalization(momentum=0.999, scale=False),
+                Dropout(0.3),
+
+                QuantConv3D(32, kernel_size=(3, 3, 3), strides=(1, 2, 2),
+                            name='quant_conv3d_2', padding="same", **kwargs),
+                MaxPooling3D(pool_size=(1, 2, 2), padding="same"),
+                BatchNormalization(momentum=0.999, scale=False),
+                Dropout(0.3),
+
+                QuantConv3D(64, kernel_size=(1, 3, 3), strides=(1, 2, 2),
+                            name='quant_conv3d_3', padding="same", **kwargs),
+                MaxPooling3D(pool_size=(1, 2, 2), padding="same"),
+                BatchNormalization(momentum=0.999, scale=False),
+                Dropout(0.4),
+
+                GlobalAveragePooling3D(),
+
+                QuantDense(256, **kwargs),
+                BatchNormalization(momentum=0.999, scale=False),
+                Dropout(0.3),
+
+                QuantDense(128, **kwargs),
+                BatchNormalization(momentum=0.999, scale=False),
+                Dropout(0.3),
+
+                Dense(2, activation='tanh')
+            ])
+        # fps: 7-9
+        elif model_version == ModelVersion.LARQV3:
+            kwargs = dict(input_quantizer="ste_sign",
+              kernel_quantizer="ste_sign",
+              kernel_constraint="weight_clip",
+              use_bias=False)
+
+            model = Sequential([
+                QuantConv3D(24, kernel_size=(3, 3, 3), strides=(1, 2, 2),
+                            name='quant_conv3d_1', padding="same", input_shape=(10, 100, 400, 1), **kwargs),
+                BatchNormalization(momentum=0.999, scale=False),
+                Dropout(0.3),
+
+                QuantConv3D(36, kernel_size=(3, 3, 3), strides=(1, 2, 2),
+                            name='quant_conv3d_2', padding="same", **kwargs),
+                MaxPooling3D(pool_size=(1, 2, 2), padding="same"),
+                BatchNormalization(momentum=0.999, scale=False),
+
+                QuantConv3D(48, kernel_size=(3, 3, 3), strides=(1, 2, 2),
+                            name='quant_conv3d_3', padding="same", **kwargs),
+                MaxPooling3D(pool_size=(1, 2, 2), padding="same"),
+                BatchNormalization(momentum=0.999, scale=False),
+                Dropout(0.3),
+
+                QuantConv3D(64, kernel_size=(3, 3, 3), name='quant_conv3d_4', padding="same", **kwargs),
+                MaxPooling3D(pool_size=(1, 2, 2), padding="same"),
+                BatchNormalization(momentum=0.999, scale=False),
+
+                QuantConv3D(64, kernel_size=(3, 3, 3), name='quant_conv3d_5', padding="same", **kwargs),
+                MaxPooling3D(pool_size=(1, 2, 2), padding="same"),
+                BatchNormalization(momentum=0.999, scale=False),
+
+                GlobalAveragePooling3D(),
+
+                QuantDense(512, **kwargs),
+                BatchNormalization(momentum=0.999, scale=False),
+                Dropout(0.3),
+
+                QuantDense(256, **kwargs),
+                BatchNormalization(momentum=0.999, scale=False),
+                Dropout(0.3),
+
+                QuantDense(10, **kwargs),
+                BatchNormalization(momentum=0.999, scale=False),
+                Dense(2, activation='tanh')
+            ])
+
+        if model_path is not None:
+            if not os.path.exists(model_path):
+                raise FileNotFoundError(f"Model file not found at: {model_path}")
+            model.load_weights(model_path)
         return model
     except Exception as e:
         raise Exception(f"Error loading model: {str(e)}")

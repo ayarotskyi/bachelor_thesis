@@ -1,28 +1,29 @@
 import json
-from keras import Sequential
-from keras.layers import Flatten, Dense, BatchNormalization, MaxPooling3D
-import keras
 import os
 import numpy as np
 import pandas as pd
 import cv2
 import matplotlib.pyplot as plt
 from agent.memory_stack import MemoryStack
+import agent.utils
+from keras.optimizers import AdamW
 import math
-from larq.layers import QuantConv3D, QuantDense
+import keras
 
-MEMORY_STACK_MAX_SIZE = 4
+MEMORY_STACK_MAX_SIZE = 10
 
 def prepare_image_data_generator(
     image_dir,
     csv_path,
+    min_fps,
+    max_fps,
     batch_size=32,
     test_split=0.2,
-    mirror_images=False
+    mirror_images=False,
 ):
     global MEMORY_STACK_MAX_SIZE
     # 1. Read CSV file
-    array = pd.read_csv(csv_path).to_numpy()[:15008]
+    array = pd.read_csv(csv_path).to_numpy()
     timestamp_array = array[:, 2]
     array = np.column_stack((array, np.arange(len(array))))
     np.random.shuffle(array)
@@ -96,58 +97,34 @@ def prepare_image_data_generator(
 if __name__ == "__main__":
     # Example of how to use the function
     train_generator, test_generator, train_array_length, test_array_length = prepare_image_data_generator(
-		image_dir="D:/bachelor arbeit/reduced_data/images",
-		csv_path="D:/bachelor arbeit/reduced_data/data.csv",
+		image_dir="reduced_data/images",
+		csv_path="reduced_data/data.csv",
         batch_size=32,
-        mirror_images=False
+        mirror_images=True
 	)
-    kwargs = dict(input_quantizer="ste_sign",
-              kernel_quantizer="ste_sign",
-              kernel_constraint="weight_clip",
-              use_bias=False)
-    model = Sequential([
-    QuantConv3D(24, kernel_size=(3, 5, 5), strides=(1, 2, 2),
-                name='quant_conv3d_1', 
-                kernel_quantizer="ste_sign",
-                kernel_constraint="weight_clip",
-                use_bias=False,
-                padding="same", 
-                input_shape=(4, 100, 400, 1)),
-    BatchNormalization(momentum=0.999, scale=False),
-    
-    QuantConv3D(36, kernel_size=(3, 5, 5), strides=(1, 2, 2),
-                name='quant_conv3d_2', padding="same", **kwargs),
-    MaxPooling3D(pool_size=(1, 2, 2), padding="same"),
-    BatchNormalization(momentum=0.999, scale=False),
-    
-    QuantConv3D(48, kernel_size=(3, 5, 5), strides=(1, 2, 2),
-                name='quant_conv3d_3', padding="same", **kwargs),
-    MaxPooling3D(pool_size=(1, 2, 2), padding="same"),
-    BatchNormalization(momentum=0.999, scale=False),
-    
-    QuantConv3D(64, kernel_size=(3, 3, 3),
-                name='quant_conv3d_4', padding="same", **kwargs),
-    MaxPooling3D(pool_size=(1, 2, 2), padding="same"),
-    BatchNormalization(momentum=0.999, scale=False),
-    
-    QuantConv3D(64, kernel_size=(3, 3, 3),
-                name='quant_conv3d_5', padding="same", **kwargs),
-    MaxPooling3D(pool_size=(1, 2, 2), padding="same"),
-    BatchNormalization(momentum=0.999, scale=False),
-    Flatten(),
 
-    QuantDense(1024, **kwargs),
-    BatchNormalization(momentum=0.999, scale=False),
+    model = agent.utils.load_model(None, agent.utils.ModelVersion.LARQV2)
 
-    QuantDense(1024, **kwargs),
-    BatchNormalization(momentum=0.999, scale=False),
+    optimizer = AdamW(learning_rate=1e-3, weight_decay=1e-4)
 
-    QuantDense(10, **kwargs),
-    BatchNormalization(momentum=0.999, scale=False),
-    Dense(2, activation='tanh')
-])
+    model.compile(loss = 'mse', optimizer = optimizer)
 
-    model.compile(loss = 'mse', optimizer = 'adam')
+    checkpoint_callback = keras.callbacks.ModelCheckpoint(
+        filepath="best_model.h5",  # Save to this file
+        monitor="val_loss",        # Save based on validation loss
+        save_best_only=True,       # Only save if the model improves
+        save_weights_only=False,   # Save full model (not just weights)
+        mode="min",                # Minimize validation loss
+        verbose=1
+    )
+    
+    early_stopping_callback = keras.callbacks.EarlyStopping(
+        monitor='val_loss', patience=10, restore_best_weights=True
+    )
+    
+    reduce_lr_callback = keras.callbacks.ReduceLROnPlateau(
+        monitor='val_loss', factor=0.5, patience=5, min_lr=1e-6
+    )
 
     history= model.fit(x=train_generator,
                        validation_data=test_generator,
@@ -156,15 +133,10 @@ if __name__ == "__main__":
                        batch_size=32,
                        steps_per_epoch=math.ceil(train_array_length / 32),
                        epochs=100, 
-                       callbacks=[
-        keras.callbacks.EarlyStopping(
-            monitor='val_loss', 
-            patience=10,  # Stops if no improvement for 10 epochs
-            restore_best_weights=True
-        )
-    ])
+                       callbacks=[early_stopping_callback, reduce_lr_callback, checkpoint_callback])
+    
     model.save('model.h5')
-    outfile = open('./model.json', 'w') 
+    outfile = open('./model.json', 'w')
     json.dump(model.to_json(), outfile)
     outfile.close()
     model.save_weights('model.weights.h5')  
