@@ -1,10 +1,11 @@
 import json
 import os
+import keras.callbacks
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import agent.utils
-from keras.optimizers import AdamW
+from keras.optimizers import adamw_experimental
 import keras
 from data_generator import data_generator, create_tf_dataset
 
@@ -53,9 +54,9 @@ if __name__ == "__main__":
 
     model = agent.utils.load_model(None, agent.utils.ModelVersion.LARQV2)
 
-    # optimizer = AdamW(learning_rate=1e-3, weight_decay=1e-4)
+    optimizer = adamw_experimental.AdamW(learning_rate=1e-3, weight_decay=1e-4)
 
-    model.compile(loss = 'mse', optimizer = 'adam')
+    model.compile(loss = 'mse', optimizer = optimizer)
 
     checkpoint_callback = keras.callbacks.ModelCheckpoint(
         filepath="best_model.h5",  # Save to this file
