@@ -37,8 +37,8 @@ def prepare_datasets(
     split_index = int(len(array)*(1 - test_split))
     train_array, test_array = array[:split_index], array[split_index:]
 
-    train_dataset = create_tf_dataset(data_generator(train_array, image_dir, timestamp_array, 10, augmentations=[]), batch_size=batch_size)
-    test_dataset = create_tf_dataset(data_generator(test_array, image_dir, timestamp_array, 10, augmentations=[], shuffle=False), batch_size=batch_size)
+    train_dataset = create_tf_dataset(data_generator(train_array, image_dir, timestamp_array, 10, augmentations=[], min_fps=min_fps, max_fps=max_fps), batch_size=batch_size)
+    test_dataset = create_tf_dataset(data_generator(test_array, image_dir, timestamp_array, 10, augmentations=[],min_fps=min_fps, max_fps=max_fps, shuffle=False), batch_size=batch_size)
 
     return train_dataset, test_dataset
 
@@ -48,8 +48,8 @@ if __name__ == "__main__":
 		image_dir="reduced_data/images",
 		csv_path="reduced_data/data.csv",
         batch_size=32,
-        max_fps=6,
-        min_fps=4
+        max_fps=12,
+        min_fps=10
 	)
 
     model = agent.utils.load_model(None, agent.utils.ModelVersion.LARQV2)

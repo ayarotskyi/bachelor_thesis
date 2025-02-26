@@ -13,11 +13,9 @@ class MemoryStack():
 
     def push(self, image):
         preprocessed_image = self.preprocess(image)
+        self.stack = np.concatenate([self.stack[1:], [preprocessed_image]])
         if self.size < self.stack.shape[0]:
-            self.stack[-1 - self.size] = preprocessed_image
             self.size += 1
-        else:
-            self.stack = np.concatenate([[preprocessed_image], self.stack[:-1],])
         return self.stack
 
     @staticmethod

@@ -17,18 +17,18 @@ jetbot = None
 
 def predict(cap, queue: multiprocessing.Queue):
     global jetbot
-    memory_stack = MemoryStack()
+    memory_stack = MemoryStack(10)
 
     jetbot = utils.init_jetbot()
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     model_path = os.path.join(script_dir, os.path.pardir, 'model.h5')
-    model = utils.load_model(model_path, model_version=utils.ModelVersion.LSTM)
+    model = utils.load_model(model_path, model_version=utils.ModelVersion.LARQV2)
 
     while cap.isOpened(): 
         re, frame = cap.read()
         preprocessed_stack = memory_stack.push(frame)
-        input_image = preprocessed_stack.reshape(1, 4, 100, 400, 1)
+        input_image = preprocessed_stack.reshape(1, 10, 100, 400, 1)
         prediction = model.predict(input_image, verbose=0)
 
         prediction = prediction[0]
