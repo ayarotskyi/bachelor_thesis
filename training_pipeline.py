@@ -26,6 +26,15 @@ def prepare_image_data_generator(
     array = pd.read_csv(csv_path).to_numpy()
     timestamp_array = array[:, 2]
     array = np.column_stack((array, np.arange(len(array))))
+    
+    # push labels one frame further so that the model would learn to predict future labels
+    for row in array:
+        current_index = int(row[3]) + 1
+        while current_index < len(array) and int(array[current_index][2]) > int(row[2]) and int(array[current_index][2]) - int(row[2]) < (1/max_fps)*1000:
+            current_index += 1
+        if current_index < len(array) and int(array[current_index][2]) > int(row[2]):
+            row[:2] = array[current_index][:2]
+
     np.random.shuffle(array)
     split_index = int(len(array)*(1 - test_split))
     train_array, test_array = array[:split_index], array[split_index:]
@@ -100,7 +109,9 @@ if __name__ == "__main__":
 		image_dir="reduced_data/images",
 		csv_path="reduced_data/data.csv",
         batch_size=32,
-        mirror_images=True
+        mirror_images=True,
+        max_fps=6,
+        min_fps=4
 	)
 
     model = agent.utils.load_model(None, agent.utils.ModelVersion.LARQV2)
