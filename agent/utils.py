@@ -1,15 +1,15 @@
 import os
 from enum import Enum
 
-ModelVersion = Enum('ModelVersion', [('TEST', 0), ('LSTM', 1), ('LARQ', 2), ('LARQV2', 3), ('LARQV3', 4)])
+ModelVersion = Enum('ModelVersion', [('TEST', 0), ('LSTM', 1), ('LARQ', 2), ('LARQV2', 3), ('LARQV3', 4), ('Conv3D', 5)])
 
 def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM):
     try:
         from keras import Sequential
-        from keras.layers import Flatten, Dense, Lambda, ConvLSTM2D, BatchNormalization, TimeDistributed, Conv2D, MaxPooling3D, GlobalAveragePooling3D, Dropout
+        from keras.layers import Flatten, Dense, Lambda, ConvLSTM2D, BatchNormalization, TimeDistributed, Conv2D, MaxPooling3D, GlobalAveragePooling3D, Dropout, Conv3D
     except:
         from tensorflow.keras import Sequential
-        from tensorflow.keras.layers import Flatten, Dense, Lambda, ConvLSTM2D, BatchNormalization, TimeDistributed, Conv2D, MaxPooling3D, GlobalAveragePooling3D, Dropout
+        from tensorflow.keras.layers import Flatten, Dense, Lambda, ConvLSTM2D, BatchNormalization, TimeDistributed, Conv2D, MaxPooling3D, GlobalAveragePooling3D, Dropout, Conv3D
     from larq.layers import QuantConv3D, QuantDense
     
     try:
@@ -102,7 +102,12 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
 
             model = Sequential([
                 QuantConv3D(24, kernel_size=(3, 3, 3), strides=(1, 2, 2),
-                            name='quant_conv3d_1', padding="same", input_shape=(10, 100, 400, 1), **kwargs),
+                            name='quant_conv3d_1', 
+                            kernel_quantizer="ste_sign",
+                            kernel_constraint="weight_clip",
+                            use_bias=False,
+                            padding="same", 
+                            input_shape=(10, 100, 400, 1)),
                 BatchNormalization(momentum=0.999, scale=False),
                 Dropout(0.3),
 
@@ -139,7 +144,12 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
 
             model = Sequential([
                 QuantConv3D(24, kernel_size=(3, 3, 3), strides=(1, 2, 2),
-                            name='quant_conv3d_1', padding="same", input_shape=(10, 100, 400, 1), **kwargs),
+                            name='quant_conv3d_1', 
+                            kernel_quantizer="ste_sign",
+                            kernel_constraint="weight_clip",
+                            use_bias=False,
+                            padding="same", 
+                            input_shape=(10, 100, 400, 1)),
                 BatchNormalization(momentum=0.999, scale=False),
                 Dropout(0.3),
 
@@ -174,6 +184,31 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
 
                 QuantDense(10, **kwargs),
                 BatchNormalization(momentum=0.999, scale=False),
+                Dense(2, activation='tanh')
+            ])
+        elif model_version == ModelVersion.Conv3D:
+            kwargs = dict(input_quantizer="ste_sign",
+              kernel_quantizer="ste_sign",
+              kernel_constraint="weight_clip",
+              use_bias=False)
+            model = Sequential([
+                Lambda(lambda x: x/255, input_shape=(10, 100, 400, 1)),
+                Conv3D(24, kernel_size=(3, 5, 5), strides=(1, 2, 2), activation='relu', 
+                           data_format='channels_last', name='conv_lstm1'),
+                TimeDistributed(BatchNormalization()),
+                Conv3D(36, kernel_size=(3, 5, 5), strides=(1, 2, 2), activation='relu', 
+                           data_format='channels_last', name='conv_lstm2'),
+                TimeDistributed(BatchNormalization()),
+                Conv3D(48, kernel_size=(3, 5, 5), strides=(1, 2, 2), activation='relu', 
+                           data_format='channels_last', name='conv_lstm3'),
+                Conv3D(64, kernel_size=(3, 3, 3), activation='relu', 
+                           data_format='channels_last', name='conv_lstm4'),
+                Conv3D(64, kernel_size=(3, 3, 3), activation='relu', 
+                           data_format='channels_last', name='conv_lstm5'),
+                Flatten(),
+                Dense(100),
+                Dense(50),
+                Dense(10),
                 Dense(2, activation='tanh')
             ])
 
