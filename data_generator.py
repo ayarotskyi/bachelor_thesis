@@ -38,7 +38,7 @@ def data_generator(array, image_dir, timestamp_array, memory_stack_size, min_fps
                     current_index -= 1
                 image_memory_stack[memory_stack_size - stack_size:] = \
                     image_memory_stack[memory_stack_size - stack_size:][::-1]
-                image_memory_stack = (image_memory_stack / 127.5 - 1).astype(np.int8)
+                image_memory_stack = image_memory_stack / 255
 
                 label = [float(row[0]), float(row[1])]
 
