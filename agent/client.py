@@ -28,7 +28,7 @@ def predict(cap, queue: multiprocessing.Queue):
     while cap.isOpened(): 
         re, frame = cap.read()
         preprocessed_stack = memory_stack.push(frame)
-        input_image = preprocessed_stack.reshape(1, 10, 100, 400, 1)
+        input_image = preprocessed_stack.reshape(1, 10, 100, 400, 1) / 255
         prediction = model.predict(input_image, verbose=0)
 
         prediction = prediction[0]
