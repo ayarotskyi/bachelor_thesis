@@ -1,7 +1,7 @@
 import os
 from enum import Enum
 
-ModelVersion = Enum('ModelVersion', [('TEST', 0), ('LSTM', 1), ('LARQ', 2), ('LARQV2', 3), ('LARQV3', 4), ('Conv3D', 5)])
+ModelVersion = Enum('ModelVersion', [('TEST', 0), ('LSTM', 1), ('LARQ', 2), ('LARQV2', 3), ('LARQV3', 4), ('Conv3D', 5), ('BETA', 6)])
 
 def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM):
     try:
@@ -186,31 +186,64 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
                 BatchNormalization(momentum=0.999, scale=False),
                 Dense(2, activation='tanh')
             ])
+        # fps: 7-8
         elif model_version == ModelVersion.Conv3D:
-            kwargs = dict(input_quantizer="ste_sign",
-              kernel_quantizer="ste_sign",
-              kernel_constraint="weight_clip",
-              use_bias=False)
             model = Sequential([
                 Lambda(lambda x: x/255, input_shape=(10, 100, 400, 1)),
                 Conv3D(24, kernel_size=(3, 5, 5), strides=(1, 2, 2), activation='relu', 
                            data_format='channels_last', name='conv_lstm1'),
                 TimeDistributed(BatchNormalization()),
+                Dropout(0.3),
                 Conv3D(36, kernel_size=(3, 5, 5), strides=(1, 2, 2), activation='relu', 
                            data_format='channels_last', name='conv_lstm2'),
                 TimeDistributed(BatchNormalization()),
                 Conv3D(48, kernel_size=(3, 5, 5), strides=(1, 2, 2), activation='relu', 
                            data_format='channels_last', name='conv_lstm3'),
+                TimeDistributed(BatchNormalization()),
+                Dropout(0.3),
                 Conv3D(64, kernel_size=(3, 3, 3), activation='relu', 
                            data_format='channels_last', name='conv_lstm4'),
-                Conv3D(64, kernel_size=(3, 3, 3), activation='relu', 
-                           data_format='channels_last', name='conv_lstm5'),
+                TimeDistributed(BatchNormalization()),
                 Flatten(),
                 Dense(100),
+                BatchNormalization(),
+                Dropout(0.3),
                 Dense(50),
+                BatchNormalization(),
+                Dropout(0.3),
                 Dense(10),
+                BatchNormalization(),
+                Dropout(0.3),
                 Dense(2, activation='tanh')
             ])
+        # fps: 7-10
+        elif model_version == ModelVersion.BETA:
+            model = Sequential()
+            model.add(Conv2D(filters=24, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv1', input_shape = (1000, 400, 1)))
+            model.add(Dropout(0.3))
+
+            model.add(Conv2D(filters=36, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv2'))
+
+            model.add(Conv2D(filters=48, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv3'))
+            model.add(Dropout(0.3))
+
+            model.add(Conv2D(filters=64, kernel_size=(3, 3), activation='relu', name='conv4'))
+
+            model.add(Conv2D(filters=64, kernel_size=(3, 3), activation='relu', name='conv5')) 
+            model.add(Dropout(0.3))
+
+            model.add(Flatten())
+
+            model.add(Dense(100))
+            model.add(Dropout(0.3))
+
+            model.add(Dense(50))
+            model.add(Dropout(0.3))
+
+            model.add(Dense(10))
+            model.add(Dropout(0.3))
+
+            model.add(Dense(2, activation='tanh'))
 
         if model_path is not None:
             if not os.path.exists(model_path):
