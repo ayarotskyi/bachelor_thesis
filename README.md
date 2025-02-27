@@ -3,6 +3,7 @@
 - Train BETA and Conv3D models with:
   1. full/first versions of the dataset
   2. prediction of first/second next frame speed
+- Check if missing normalization of images could affect the performance
 
 ---
 
