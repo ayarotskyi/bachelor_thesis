@@ -26,7 +26,7 @@ def prepare_datasets(
     # push labels one frame further so that the model would learn to predict future labels
     for row in array:
         current_index = int(row[3]) + 1
-        while current_index < len(array) and int(array[current_index][2]) > int(row[2]) and int(array[current_index][2]) - int(row[2]) < (1/max_fps)*1000:
+        while current_index < len(array) and int(array[current_index][2]) > int(row[2]) and int(array[current_index][2]) - int(row[2]) < (1/min_fps)*1000:
             current_index += 1
         if current_index < len(array) and int(array[current_index][2]) > int(row[2]):
             row[:2] = array[current_index][:2]
