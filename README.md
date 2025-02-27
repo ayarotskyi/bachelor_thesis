@@ -13,7 +13,7 @@
   3. first/1 frame
   4. first/2 frames
 - Conv3D
-  1. full/1 frame
+  1. full/1 frame ⏳
   2. full/2 frames
   3. first/1 frame
   4. first/2 frames
