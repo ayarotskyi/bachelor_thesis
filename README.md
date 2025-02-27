@@ -4,6 +4,19 @@
   1. full/first versions of the dataset
   2. prediction of first/second next frame speed
 
+---
+
+- BETA
+  1. full/1 frame ⏳
+  2. full/2 frames
+  3. first/1 frame
+  4. first/2 frames
+- Conv3D
+  1. full/1 frame
+  2. full/2 frames
+  3. first/1 frame
+  4. first/2 frames
+
 # Environment setup:
 
 - MacOS:
