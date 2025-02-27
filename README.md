@@ -1,6 +1,8 @@
 # TODO
 
-- Train BETA and Conv3D models with full dataset and first version of the dataset
+- Train BETA and Conv3D models with:
+  1. full/first versions of the dataset
+  2. prediction of first/second next frame speed
 
 # Environment setup:
 
