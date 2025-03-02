@@ -4,6 +4,7 @@ import math
 import os
 from tqdm import tqdm
 import csv
+import scipy.interpolate
 
 saved_image_index = 0
 class VehicleTrajectorySimulator:
@@ -24,7 +25,7 @@ class VehicleTrajectorySimulator:
         
         # Simulation area parameters
         self.AREA_WIDTH = 2.0   # 2 meters wide
-        self.AREA_HEIGHT = 2.0  # 1 meter tall
+        self.AREA_HEIGHT = 1.0  # 1 meter tall
         
         # Screen dimensions
         self.SCREEN_WIDTH = screen_width
@@ -43,8 +44,8 @@ class VehicleTrajectorySimulator:
         self.speed_threashold = 0.30
         
         # Initial vehicle position (30cm from one long side)
-        self.initial_x = 0
-        self.initial_y = 0.6
+        self.initial_x = 0.13
+        self.initial_y = 0.335
         
         # Simulation state
         self.current_x = self.initial_x
@@ -53,7 +54,7 @@ class VehicleTrajectorySimulator:
         
         # Trajectory data
         self.joystick_data = joystick_data
-        self.trajectory = self.simulate_trajectory()
+        self.trajectory = self.compute_trajectory()
         
         # Colors
         self.WHITE = (255, 255, 255)
@@ -108,88 +109,165 @@ class VehicleTrajectorySimulator:
 
         return left_power, right_power
     
-    def simulate_trajectory(self):
-        """
-        Simulate vehicle trajectory with acceleration and previous speed consideration.
+    def compute_trajectory(self):
+        # Given data: coefficients and corresponding velocities
+        coefficients = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+        avg_velocity = np.array([0.0, 0.07, 0.13, 0.19, 0.26, 0.3, 0.38, 0.43, 0.48, 0.55])
 
-        :return: List of trajectory points with position and timestamp
-        """
-        trajectory = []
+        # Parameters for fine-tuning
+        tau = 0.05    # Motor acceleration time constant
+        rolling_resistance = 0.14
 
-        # Initial conditions
-        current_x, current_y = self.initial_x, self.initial_y
-        current_theta = 0
+        # Create an interpolation function
+        f = scipy.interpolate.interp1d(coefficients, avg_velocity, kind='linear', fill_value='extrapolate')
+    
+        def f_velocity(k, V_prev):
+            static_threshold = 0.23
 
-        # Initial velocities
-        current_linear_velocity = 0
-        current_angular_velocity = 0
+            if abs(k) < static_threshold and V_prev == 0:
+                return 0  # Not enough power to start
 
-        # Vehicle parameters for more realistic dynamics
-        MAX_LINEAR_ACCELERATION = 1.0  # m/s²
-        MAX_ANGULAR_ACCELERATION = 1.0  # rad/s²
-        MAX_LINEAR_VELOCITY = 2.0  # m/s
-        MAX_ANGULAR_VELOCITY = math.pi  # rad/s
+            V = np.sign(k) * f(abs(k))  # Normal speed calculation
 
-        for i, point in enumerate(self.joystick_data):
-            # Calculate motor speeds
-            left_speed, right_speed = self.calculate_motor_speeds(point['x'], point['y'])
+            return V
 
-            # Convert motor speeds to desired velocities
-            desired_left_motor_velocity = (left_speed * self.motor_efficiency 
-                                           if left_speed > self.speed_threashold
-                                           or left_speed < -self.speed_threashold
-                                           else 0)
-            desired_right_motor_velocity = (right_speed * self.motor_efficiency 
-                                            if right_speed > self.speed_threashold
-                                            or right_speed < -self.speed_threashold
-                                            else 0)
+        # Initial state
+        x, y, theta = self.initial_x, self.initial_y, 0
+        wheelbase = 0.1
+        data = self.joystick_data
+        trajectory = [{
+            'x': x,
+            'y': y,
+            'timestamp': np.float64(0)
+        }]  # Initial position with first timestamp
 
-            # Calculate desired linear and angular velocities
-            desired_linear_velocity = (desired_left_motor_velocity + desired_right_motor_velocity) / 2
-            desired_angular_velocity = (desired_right_motor_velocity - desired_left_motor_velocity) / self.wheel_base
+        V_l_prev, V_r_prev = 0, 0
 
-            # Calculate acceleration (limited by max acceleration)
-            linear_acceleration = np.clip(
-                desired_linear_velocity - current_linear_velocity, 
-                -MAX_LINEAR_ACCELERATION, 
-                MAX_LINEAR_ACCELERATION
-            )
-            angular_acceleration = np.clip(
-                desired_angular_velocity - current_angular_velocity, 
-                -MAX_ANGULAR_ACCELERATION, 
-                MAX_ANGULAR_ACCELERATION
-            )
+        for i in range(1, len(data)):
+            point = data[i]
+            k_l, k_r = self.calculate_motor_speeds(point['x'], point['y'])
+            t = point['timestamp'].astype('float64')
+            prev_t = data[i - 1]['timestamp'].astype('float64')
 
-            # Update velocities with acceleration
-            current_linear_velocity = np.clip(
-                current_linear_velocity + linear_acceleration, 
-                -MAX_LINEAR_VELOCITY, 
-                MAX_LINEAR_VELOCITY
-            )
-            current_angular_velocity = np.clip(
-                current_angular_velocity + angular_acceleration, 
-                -MAX_ANGULAR_VELOCITY, 
-                MAX_ANGULAR_VELOCITY
-            )
+            # Compute velocity
+            V_l_target = f_velocity(k_l, V_l_prev)
+            V_r_target = f_velocity(k_r, V_r_prev)
 
-            # Time between points (in seconds)
-            if i > 0:
-                time_delta = (point['timestamp'] - self.joystick_data[i-1]['timestamp']).astype('float64') / 1000.0
-            else:
-                time_delta = 0.0
+            # Compute time step
+            dt = (t - prev_t) / 1000.0  # Convert ms to seconds
 
-            # Update position and orientation
-            current_theta += current_angular_velocity * time_delta
-            current_x += current_linear_velocity * np.cos(current_theta) * time_delta
-            current_y += current_linear_velocity * np.sin(current_theta) * time_delta
+            # Simulate acceleration response
+            V_l = V_l_prev + (V_l_target - V_l_prev) / tau * dt
+            V_r = V_r_prev + (V_r_target - V_r_prev) / tau * dt
 
-            # Store trajectory point
+            # Simulate rolling resistance
+            V_l = V_l - np.sign(V_l) * rolling_resistance * dt
+            V_r = V_r - np.sign(V_r) * rolling_resistance * dt
+
+            # Compute linear
+            V = (V_l + V_r) / 2
+            
+            # Compute angular velocity
+            omega = (V_r - V_l) / (2 * wheelbase)
+
+            # Update state
+            V_l_prev, V_r_prev = V_l, V_r
+
+            # Update position
+            theta = theta + omega * dt
+            x += V * dt * np.cos(theta)
+            y += V * dt * np.sin(theta)
+
             trajectory.append({
-                'x': current_x,
-                'y': current_y,
-                'timestamp': point['timestamp']
+                'x': x,
+                'y': y,
+                'timestamp': t
             })
+
         return trajectory
+    
+    # def simulate_trajectory(self):
+    #     """
+    #     Simulate vehicle trajectory with acceleration and previous speed consideration.
+
+    #     :return: List of trajectory points with position and timestamp
+    #     """
+    #     trajectory = []
+
+    #     # Initial conditions
+    #     current_x, current_y = self.initial_x, self.initial_y
+    #     current_theta = 0
+
+    #     # Initial velocities
+    #     current_linear_velocity = 0
+    #     current_angular_velocity = 0
+
+    #     # Vehicle parameters for more realistic dynamics
+    #     MAX_LINEAR_ACCELERATION = 1.0  # m/s²
+    #     MAX_ANGULAR_ACCELERATION = 1.0  # rad/s²
+    #     MAX_LINEAR_VELOCITY = 2.0  # m/s
+    #     MAX_ANGULAR_VELOCITY = math.pi  # rad/s
+
+    #     for i, point in enumerate(self.joystick_data):
+    #         # Calculate motor speeds
+    #         left_speed, right_speed = self.calculate_motor_speeds(point['x'], point['y'])
+
+    #         # Convert motor speeds to desired velocities
+    #         desired_left_motor_velocity = (left_speed * self.motor_efficiency 
+    #                                        if left_speed > self.speed_threashold
+    #                                        or left_speed < -self.speed_threashold
+    #                                        else 0)
+    #         desired_right_motor_velocity = (right_speed * self.motor_efficiency 
+    #                                         if right_speed > self.speed_threashold
+    #                                         or right_speed < -self.speed_threashold
+    #                                         else 0)
+
+    #         # Calculate desired linear and angular velocities
+    #         desired_linear_velocity = (desired_left_motor_velocity + desired_right_motor_velocity) / 2
+    #         desired_angular_velocity = (desired_right_motor_velocity - desired_left_motor_velocity) / self.wheel_base
+
+    #         # Calculate acceleration (limited by max acceleration)
+    #         linear_acceleration = np.clip(
+    #             desired_linear_velocity - current_linear_velocity, 
+    #             -MAX_LINEAR_ACCELERATION, 
+    #             MAX_LINEAR_ACCELERATION
+    #         )
+    #         angular_acceleration = np.clip(
+    #             desired_angular_velocity - current_angular_velocity, 
+    #             -MAX_ANGULAR_ACCELERATION, 
+    #             MAX_ANGULAR_ACCELERATION
+    #         )
+
+    #         # Update velocities with acceleration
+    #         current_linear_velocity = np.clip(
+    #             current_linear_velocity + linear_acceleration, 
+    #             -MAX_LINEAR_VELOCITY, 
+    #             MAX_LINEAR_VELOCITY
+    #         )
+    #         current_angular_velocity = np.clip(
+    #             current_angular_velocity + angular_acceleration, 
+    #             -MAX_ANGULAR_VELOCITY, 
+    #             MAX_ANGULAR_VELOCITY
+    #         )
+
+    #         # Time between points (in seconds)
+    #         if i > 0:
+    #             time_delta = (point['timestamp'] - self.joystick_data[i-1]['timestamp']).astype('float64') / 1000.0
+    #         else:
+    #             time_delta = 0.0
+
+    #         # Update position and orientation
+    #         current_theta += current_angular_velocity * time_delta
+    #         current_x += current_linear_velocity * np.cos(current_theta) * time_delta
+    #         current_y += current_linear_velocity * np.sin(current_theta) * time_delta
+
+    #         # Store trajectory point
+    #         trajectory.append({
+    #             'x': current_x,
+    #             'y': current_y,
+    #             'timestamp': point['timestamp']
+    #         })
+    #     return trajectory
     
     def hyperparameter(self):
         print("starting hyperparameter search")
@@ -208,7 +286,7 @@ class VehicleTrajectorySimulator:
                     self.wheel_base = wheel_base
                     self.motor_efficiency = motor_efficiency
                     self.speed_threashold = speed_threashold
-                    trajectory = self.simulate_trajectory()
+                    trajectory = self.compute_trajectory()
                     last_point = trajectory[-1]
                     diff = (math.sqrt(math.pow(last_point['x'] - desired_x, 2) + math.pow(last_point['y'] - desired_y, 2)) 
                             + abs(max(map(lambda point: point['x'], trajectory)) - desired_max_x))
@@ -332,27 +410,27 @@ class VehicleTrajectorySimulator:
                              (0, self.SCREEN_HEIGHT // 2, self.SCREEN_WIDTH, self.SCREEN_HEIGHT // 2), 2)
             pygame.draw.rect(self.screen, 
                              self.RED, 
-                             (self.SCREEN_WIDTH // 4, self.SCREEN_HEIGHT // 8, self.SCREEN_WIDTH // 25, self.SCREEN_HEIGHT // 25), 
+                             ((0.5 / self.AREA_WIDTH) * self.SCREEN_WIDTH, (0.36 / self.AREA_HEIGHT) * self.SCREEN_HEIGHT / 2, (0.04 / self.AREA_WIDTH) * self.SCREEN_WIDTH, (0.04 / self.AREA_HEIGHT) * self.SCREEN_HEIGHT / 2), 
                              2)
             pygame.draw.rect(self.screen, 
                              self.RED, 
-                             (self.SCREEN_WIDTH // 4, self.SCREEN_HEIGHT // 3, self.SCREEN_WIDTH // 25, self.SCREEN_HEIGHT // 25), 
+                             ((0.5 / self.AREA_WIDTH) * self.SCREEN_WIDTH, (0.66 / self.AREA_HEIGHT) * self.SCREEN_HEIGHT / 2, (0.04 / self.AREA_WIDTH) * self.SCREEN_WIDTH, (0.04 / self.AREA_HEIGHT) * self.SCREEN_HEIGHT / 2), 
                              2)
             pygame.draw.rect(self.screen, 
                              self.RED, 
-                             (self.SCREEN_WIDTH // 2, self.SCREEN_HEIGHT // 5.6, self.SCREEN_WIDTH // 25, self.SCREEN_HEIGHT // 25), 
+                             ((0.98 / self.AREA_WIDTH) * self.SCREEN_WIDTH, (0.26 / self.AREA_HEIGHT) * self.SCREEN_HEIGHT / 2, (0.04 / self.AREA_WIDTH) * self.SCREEN_WIDTH, (0.04 / self.AREA_HEIGHT) * self.SCREEN_HEIGHT / 2), 
                              2)
             pygame.draw.rect(self.screen, 
                              self.RED, 
-                             (self.SCREEN_WIDTH // 2, self.SCREEN_HEIGHT // 2.7, self.SCREEN_WIDTH // 25, self.SCREEN_HEIGHT // 25), 
+                             ((0.98 / self.AREA_WIDTH) * self.SCREEN_WIDTH, (0.56 / self.AREA_HEIGHT) * self.SCREEN_HEIGHT / 2, (0.04 / self.AREA_WIDTH) * self.SCREEN_WIDTH, (0.04 / self.AREA_HEIGHT) * self.SCREEN_HEIGHT / 2), 
                              2)
             pygame.draw.rect(self.screen, 
                              self.RED, 
-                             (self.SCREEN_WIDTH // 1.3, self.SCREEN_HEIGHT // 8, self.SCREEN_WIDTH // 25, self.SCREEN_HEIGHT // 25), 
+                             ((1.46 / self.AREA_WIDTH) * self.SCREEN_WIDTH, (0.36 / self.AREA_HEIGHT) * self.SCREEN_HEIGHT / 2, (0.04 / self.AREA_WIDTH) * self.SCREEN_WIDTH, (0.04 / self.AREA_HEIGHT) * self.SCREEN_HEIGHT / 2), 
                              2)
             pygame.draw.rect(self.screen, 
                              self.RED, 
-                             (self.SCREEN_WIDTH // 1.3, self.SCREEN_HEIGHT // 3, self.SCREEN_WIDTH // 25, self.SCREEN_HEIGHT // 25), 
+                             ((1.46 / self.AREA_WIDTH) * self.SCREEN_WIDTH, (0.66 / self.AREA_HEIGHT) * self.SCREEN_HEIGHT / 2, (0.04 / self.AREA_WIDTH) * self.SCREEN_WIDTH, (0.04 / self.AREA_HEIGHT) * self.SCREEN_HEIGHT / 2), 
                              2)
             
             # Draw trajectory
@@ -383,7 +461,7 @@ class VehicleTrajectorySimulator:
         pygame.quit()
 
 def main():
-    outputs_path = "D:/bachelor arbeit/outputs"
+    outputs_path = "/Users/andrewyarotskyi/Downloads/outputs"
     for path in os.listdir(outputs_path):
         path = outputs_path + "/" + path
         joystick_data = np.load(path+"/data.npy")
