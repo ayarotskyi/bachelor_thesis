@@ -2,21 +2,22 @@ import numpy as np
 import cv2
 
 class MemoryStack():
-    size = None
     stack: np.ndarray = None
-    max_size = None
+    history: np.ndarray = None
 
     def __init__(self, stack_size = 4):
         self.stack = np.zeros((stack_size, 100, 400))
-        self.max_size = stack_size
         self.size = 0
+        self.history = np.array([[0, 0]] * 10)
 
     def push(self, image):
         preprocessed_image = self.preprocess(image)
         self.stack = np.concatenate([self.stack[1:], [preprocessed_image]])
-        if self.size < self.stack.shape[0]:
-            self.size += 1
         return self.stack
+    
+    def push_history(self, prediction):
+        self.history = np.concatenate([self.history[1:], [prediction]])
+        return self.history
 
     @staticmethod
     def preprocess(image):

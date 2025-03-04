@@ -244,6 +244,7 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
             model.add(Dropout(0.3))
 
             model.add(Dense(2, activation='tanh'))
+        # fps: 8-10
         elif model_version == ModelVersion.BetaMultibranch:
             input1 = Input(shape=(1000, 400, 1), name="cnn_input")
 
