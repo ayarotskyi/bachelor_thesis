@@ -38,18 +38,15 @@ def data_generator(array, image_dir, timestamp_array, memory_stack_size, min_fps
                     current_index -= 1
                 image_memory_stack[memory_stack_size - stack_size:] = \
                     image_memory_stack[memory_stack_size - stack_size:][::-1]
-                image_memory_stack = image_memory_stack / 255
+                image_memory_stack = np.concatenate(image_memory_stack / 255)
 
                 label = [float(row[0]), float(row[1])]
 
                 # Yield original
-                yield image_memory_stack, label
-
-                # Apply augmentations
-                if 'flip' in augmentations:
-                    flipped_image = np.flip(image_memory_stack, axis=2)
-                    flipped_label = [-label[0], label[1]]
-                    yield flipped_image, flipped_label
+                yield {
+                    "cnn_input": image_memory_stack,
+                    "dense_input": row[4:].reshape(10,2)
+                }, label
 
             except Exception as e:
                 print(f"Error processing data: {e}")
@@ -60,7 +57,10 @@ def create_tf_dataset(generator, batch_size):
     dataset = tf.data.Dataset.from_generator(
         generator,
         output_signature=(
-            tf.TensorSpec(shape=(10, 100, 400), dtype=tf.int8),
+            {
+                "cnn_input": tf.TensorSpec(shape=(1000, 400), dtype=tf.int8),  # First input (CNN)
+                "dense_input": tf.TensorSpec(shape=(10, 2), dtype=tf.float32), # Second input (Dense)
+            },
             tf.TensorSpec(shape=(2,), dtype=tf.float32),
         )
     )

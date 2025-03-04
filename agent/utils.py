@@ -1,15 +1,15 @@
 import os
 from enum import Enum
 
-ModelVersion = Enum('ModelVersion', [('TEST', 0), ('LSTM', 1), ('LARQ', 2), ('LARQV2', 3), ('LARQV3', 4), ('Conv3D', 5), ('BETA', 6)])
+ModelVersion = Enum('ModelVersion', [('TEST', 0), ('LSTM', 1), ('LARQ', 2), ('LARQV2', 3), ('LARQV3', 4), ('Conv3D', 5), ('BETA', 6), ('BetaMultibranch', 7)])
 
 def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM):
     try:
-        from keras import Sequential
-        from keras.layers import Flatten, Dense, Lambda, ConvLSTM2D, BatchNormalization, TimeDistributed, Conv2D, MaxPooling3D, GlobalAveragePooling3D, Dropout, Conv3D
+        from keras import Sequential, Model
+        from keras.layers import Flatten, Dense, Lambda, ConvLSTM2D, BatchNormalization, TimeDistributed, Conv2D, MaxPooling3D, GlobalAveragePooling3D, Dropout, Conv3D, Input, Concatenate
     except:
-        from tensorflow.keras import Sequential
-        from tensorflow.keras.layers import Flatten, Dense, Lambda, ConvLSTM2D, BatchNormalization, TimeDistributed, Conv2D, MaxPooling3D, GlobalAveragePooling3D, Dropout, Conv3D
+        from tensorflow.keras import Sequential, Model
+        from tensorflow.keras.layers import Flatten, Dense, Lambda, ConvLSTM2D, BatchNormalization, TimeDistributed, Conv2D, MaxPooling3D, GlobalAveragePooling3D, Dropout, Conv3D, Input, Concatenate
     from larq.layers import QuantConv3D, QuantDense
     
     try:
@@ -244,6 +244,42 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
             model.add(Dropout(0.3))
 
             model.add(Dense(2, activation='tanh'))
+        elif model_version == ModelVersion.BetaMultibranch:
+            input1 = Input(shape=(1000, 400, 1), name="cnn_input")
+
+            x = Conv2D(filters=24, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv1')(input1)
+            x = Dropout(0.3)(x)
+
+            x = Conv2D(filters=36, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv2')(x)
+            x = Conv2D(filters=48, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv3')(x)
+            x = Dropout(0.3)(x)
+
+            x = Conv2D(filters=64, kernel_size=(3, 3), activation='relu', name='conv4')(x)
+            x = Conv2D(filters=64, kernel_size=(3, 3), activation='relu', name='conv5')(x)
+            x = Dropout(0.3)(x)
+
+            x = Flatten()(x)  # Flatten CNN output
+            x = Dense(100, activation="relu")(x)
+
+            # Second input branch (Dense)
+            input2 = Input(shape=(10, 2), name="dense_input")
+
+            y = Flatten()(input2)  # Flatten the input in case it's not already 1D
+            y = Dense(40, activation="relu")(y)  # Apply a dense layer
+
+            # Merge both branches
+            z = Concatenate()([x, y])
+
+            z = Dense(50, activation="relu")(z)
+            z = Dropout(0.3)(z)
+
+            z = Dense(10, activation="relu")(z)
+            z = Dropout(0.3)(z)
+
+            output = Dense(2, activation="tanh")(z)  # Final output
+
+            # Create model
+            model = Model(inputs=[input1, input2], outputs=output)
 
         if model_path is not None:
             if not os.path.exists(model_path):

@@ -9,6 +9,18 @@ from data_generator import data_generator, create_tf_dataset
 
 MEMORY_STACK_MAX_SIZE = 10
 
+def get_history(arr):
+    result = []
+    history = [[0, 0]] * 10  # Initialize with 10 (0,0) tuples
+    for i in range(len(arr)):
+        time = arr[i][2]
+        if time == 0 or i == 0:
+            history = [[0, 0]] * 10  # Reset history to 10 (0,0) tuples
+        else:
+            history = np.concatenate([history[1:], [arr[i-1, :2]]])
+        result.append(history)
+    return np.array(result, dtype=object)
+
 def prepare_datasets(
     image_dir,
     csv_path,
@@ -21,7 +33,8 @@ def prepare_datasets(
     # 1. Read CSV file
     array = pd.read_csv(csv_path).to_numpy()
     timestamp_array = array[:, 2]
-    array = np.column_stack((array, np.arange(len(array))))
+    history = get_history(array)
+    array = np.column_stack((array, np.arange(len(array)), history.reshape((history.shape[0], 20))))
     
     # push labels one frame further so that the model would learn to predict future labels
     for row in array:
@@ -46,11 +59,11 @@ if __name__ == "__main__":
 		image_dir="reduced_data/images",
 		csv_path="reduced_data/data.csv",
         batch_size=32,
-        max_fps=12,
-        min_fps=10
+        max_fps=10,
+        min_fps=7
 	)
 
-    model = agent.utils.load_model(None, agent.utils.ModelVersion.LARQV2)
+    model = agent.utils.load_model(None, agent.utils.ModelVersion.BetaMultibranch)
 
     model.compile(loss = 'mse', optimizer = 'adam')
 
