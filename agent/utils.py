@@ -282,36 +282,31 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
             # Create model
             model = Model(inputs=[input1, input2], outputs=output)
         elif model_version == ModelVersion.MultibranchV2:
-            input1 = Input(shape=(1000, 400, 1), name="cnn_input")
-
-            x = Conv2D(24, (5, 5), strides=(1, 1), padding='same', activation='relu')(input1)
-            x = BatchNormalization()(x)
-            x = MaxPooling2D(pool_size=(2, 2))(x)
-
-            x = Conv2D(36, (5, 5), strides=(1, 1), padding='same', activation='relu')(x)
-            x = BatchNormalization()(x)
-            x = MaxPooling2D(pool_size=(2, 2))(x)
-
-            x = Conv2D(48, (3, 3), activation='relu')(x)
+            input1 = Input(shape=(400, 400, 1), name="cnn_input")
+            x = Conv2D(filters=24, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv1')(input1)
+            x = Conv2D(filters=36, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv2')(x)
+            x = Conv2D(filters=48, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='conv3')(x)
+            x = Conv2D(filters=64, kernel_size=(3, 3), activation='relu', name='conv4')(x)
+            x = Conv2D(filters=64, kernel_size=(3, 3), activation='relu', name='conv5')(x)
             x = BatchNormalization()(x)
 
             x = Flatten()(x)
+            x = Dropout(0.5)(x)
+            x = Dense(200, activation="relu")(x)
+            x = Dropout(0.7)(x)
             x = Dense(100, activation="relu")(x)
+            x = Dropout(0.5)(x)
 
             # Second input branch (Dense)
-            input2 = Input(shape=(10, 2), name="dense_input")
-
+            input2 = Input(shape=(4, 2), name="dense_input")
             y = Flatten()(input2)
+            y = Dropout(0.5)(y)
             y = Dense(40, activation="relu")(y)
-
-            # Merge both branches
-            z = Concatenate()([x, y])
-
-            z = Dense(50, activation="relu")(z)
-            z = Dropout(0.3)(z)
-
-            z = Dense(10, activation="relu")(z)
-            z = Dropout(0.3)(z)
+            y = Dropout(0.5)(y)
+            
+            z = Concatenate()([x,y])
+            z = Dense(30, activation="relu")(z)
+            z = Dropout(0.7)(z)
 
             output = Dense(2, activation="tanh")(z)  # Final output
 
