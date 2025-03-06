@@ -28,11 +28,10 @@ def predict(camera, queue: multiprocessing.Queue):
 
     prev_time = time.time()
     index = 0
-    camera.running = True
     while True: 
         frame = camera.value
         preprocessed_stack = memory_stack.push(frame)
-        input_image = preprocessed_stack.reshape(1, 1000, 400, 1)
+        input_image = preprocessed_stack.reshape(1, 1000, 400, 1) / 127.5 - 1
         prediction = model.predict({"cnn_input": input_image, "dense_input": memory_stack.history.reshape(1, 10, 2)}, verbose=0)
 
         prediction = prediction[0]
@@ -55,6 +54,7 @@ def predict(camera, queue: multiprocessing.Queue):
 
 def start_prediction(queue: multiprocessing.Queue):
     camera = CSICamera(width=400, height=400, capture_width=1640, capture_height=1232, capture_fps=30)
+    camera.running = True
     predict(camera=camera, queue=queue)
 
 def sender_process_handle(queue: multiprocessing.Queue):

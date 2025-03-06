@@ -1,15 +1,15 @@
 import os
 from enum import Enum
 
-ModelVersion = Enum('ModelVersion', [('TEST', 0), ('LSTM', 1), ('LARQ', 2), ('LARQV2', 3), ('LARQV3', 4), ('Conv3D', 5), ('BETA', 6), ('BetaMultibranch', 7)])
+ModelVersion = Enum('ModelVersion', [('TEST', 0), ('LSTM', 1), ('LARQ', 2), ('LARQV2', 3), ('LARQV3', 4), ('Conv3D', 5), ('BETA', 6), ('BetaMultibranch', 7), ('MultibranchV2', 8)])
 
 def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM):
     try:
         from keras import Sequential, Model
-        from keras.layers import Flatten, Dense, Lambda, ConvLSTM2D, BatchNormalization, TimeDistributed, Conv2D, MaxPooling3D, GlobalAveragePooling3D, Dropout, Conv3D, Input, Concatenate
+        from keras.layers import Flatten, Dense, Lambda, ConvLSTM2D, BatchNormalization, TimeDistributed, Conv2D, MaxPooling3D, GlobalAveragePooling3D, Dropout, Conv3D, Input, Concatenate, MaxPooling2D
     except:
         from tensorflow.keras import Sequential, Model
-        from tensorflow.keras.layers import Flatten, Dense, Lambda, ConvLSTM2D, BatchNormalization, TimeDistributed, Conv2D, MaxPooling3D, GlobalAveragePooling3D, Dropout, Conv3D, Input, Concatenate
+        from tensorflow.keras.layers import Flatten, Dense, Lambda, ConvLSTM2D, BatchNormalization, TimeDistributed, Conv2D, MaxPooling3D, GlobalAveragePooling3D, Dropout, Conv3D, Input, Concatenate, MaxPooling2D
     from larq.layers import QuantConv3D, QuantDense
     
     try:
@@ -267,6 +267,42 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
 
             y = Flatten()(input2)  # Flatten the input in case it's not already 1D
             y = Dense(40, activation="relu")(y)  # Apply a dense layer
+
+            # Merge both branches
+            z = Concatenate()([x, y])
+
+            z = Dense(50, activation="relu")(z)
+            z = Dropout(0.3)(z)
+
+            z = Dense(10, activation="relu")(z)
+            z = Dropout(0.3)(z)
+
+            output = Dense(2, activation="tanh")(z)  # Final output
+
+            # Create model
+            model = Model(inputs=[input1, input2], outputs=output)
+        elif model_version == ModelVersion.MultibranchV2:
+            input1 = Input(shape=(1000, 400, 1), name="cnn_input")
+
+            x = Conv2D(24, (5, 5), strides=(1, 1), padding='same', activation='relu')(input1)
+            x = BatchNormalization()(x)
+            x = MaxPooling2D(pool_size=(2, 2))(x)
+
+            x = Conv2D(36, (5, 5), strides=(1, 1), padding='same', activation='relu')(x)
+            x = BatchNormalization()(x)
+            x = MaxPooling2D(pool_size=(2, 2))(x)
+
+            x = Conv2D(48, (3, 3), activation='relu')(x)
+            x = BatchNormalization()(x)
+
+            x = Flatten()(x)
+            x = Dense(100, activation="relu")(x)
+
+            # Second input branch (Dense)
+            input2 = Input(shape=(10, 2), name="dense_input")
+
+            y = Flatten()(input2)
+            y = Dense(40, activation="relu")(y)
 
             # Merge both branches
             z = Concatenate()([x, y])

@@ -7,6 +7,8 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from tqdm import tqdm
+import agent.utils
+import agent.memory_stack
 
 def preprocess_image(image_path):
     image = cv2.resize(cv2.imread(image_path, cv2.IMREAD_GRAYSCALE), (400, 200))[100:, :]
@@ -24,39 +26,39 @@ def preprocess_image(image_path):
 
 def create_activation_animation(model_path, csv_path, images_dir):
     # Load model and data
-    model = load_model(model_path)
+    model = agent.utils.load_model(model_path, agent.utils.ModelVersion.BetaMultibranch)
     csv_data = pd.read_csv(csv_path).to_numpy()
 
     # Prepare animation data
     animation_data = []
 
     for index in tqdm(range(0, 254)):
-        image_memory_stack = []
-        for i in range(0, 4):
+        image_memory_stack = agent.memory_stack.MemoryStack(10)
+        for i in range(0, 10):
             current_index = index - i
             image_filename = f"{current_index}.png"
             image_path = os.path.join(images_dir, image_filename)
             if current_index >= 0:
-                image_memory_stack.append(preprocess_image(image_path))
-            else:
-                image_memory_stack.append(np.zeros((100, 400)))
+                image_memory_stack.push(cv2.imread(image_path))
+                point = csv_data[current_index]
+                image_memory_stack.push_history([float(point[0]), float(point[1])])
         
         original_image = cv2.resize(cv2.imread(os.path.join(images_dir, f"{index}.png"), cv2.IMREAD_COLOR), (400, 200))
-        combined_image = np.concatenate(image_memory_stack)
+        combined_image = np.concatenate(image_memory_stack.stack)
 
         # Reshape image to match model's input shape
-        input_image = combined_image.reshape(1, 400, 400, 1)
+        input_image = combined_image.reshape(1, 1000, 400, 1)
 
         # Create activation model
-        layer_names = ['conv1', 'conv2', 'conv3', 'conv4', 'conv5']
+        layer_names = ['conv1', 'conv2', 'conv3', 'conv4']
         activation_model = tf.keras.Model(
             inputs=model.input, 
             outputs=[model.get_layer(name).output for name in layer_names]
         )
 
         # Get activations
-        activations = activation_model.predict(input_image, verbose=0)
-        results = model.predict(input_image, verbose=0)
+        activations = activation_model.predict({"cnn_input": input_image, "dense_input": image_memory_stack.history.reshape(1, 10, 2)}, verbose=0)
+        results = model.predict({"cnn_input": input_image, "dense_input": image_memory_stack.history.reshape(1, 10, 2)}, verbose=0)
 
         animation_data.append({
             'original_image': original_image, 
@@ -119,9 +121,9 @@ def create_activation_animation(model_path, csv_path, images_dir):
     # Activation layers subplots
     ax_activations = []
     im_activations = []
-    layer_names = ['conv1', 'conv2', 'conv3', 'conv4', 'conv5']
+    layer_names = ['conv1', 'conv2', 'conv3', 'conv4']
     
-    for i in range(5):
+    for i in range(4):
         ax = fig.add_subplot(gs[1 if i < 2 else 2, (i + 1) % 3])
         ax.set_title(layer_names[i])
         avg_activation = np.mean(animation_data[0]['activations'][i][0], axis=-1)
@@ -184,8 +186,8 @@ def create_activation_animation(model_path, csv_path, images_dir):
 
 # Example usage
 model_path = 'model.h5'
-csv_path = "D:/bachelor arbeit/reduced_data/data.csv"
-images_dir = "D:/bachelor arbeit/reduced_data/images"
+csv_path = "reduced_data/data.csv"
+images_dir = "reduced_data/images"
 
 # Create the animation
 anim = create_activation_animation(model_path, csv_path, images_dir)

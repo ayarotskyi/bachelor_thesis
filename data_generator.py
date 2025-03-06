@@ -26,7 +26,7 @@ def data_generator(array, image_dir, timestamp_array, memory_stack_size, min_fps
 
                     if os.path.exists(image_path) and (
                         next_timestamp is None or
-                        (next_timestamp - current_timestamp) > 1000 * 2/(max_fps + min_fps) # avg frequency
+                        (next_timestamp - current_timestamp) > 1000 * 1/min_fps
                     ):
                         image_memory_stack = \
                             np.concatenate([image_memory_stack[1:], [MemoryStack.preprocess(cv2.imread(image_path))]])
@@ -38,7 +38,7 @@ def data_generator(array, image_dir, timestamp_array, memory_stack_size, min_fps
                     current_index -= 1
                 image_memory_stack[memory_stack_size - stack_size:] = \
                     image_memory_stack[memory_stack_size - stack_size:][::-1]
-                image_memory_stack = np.concatenate(image_memory_stack / 255)
+                image_memory_stack = np.concatenate(image_memory_stack) / 127.5 - 1
 
                 label = [float(row[0]), float(row[1])]
 
