@@ -74,7 +74,11 @@ def data_generator(
             base_timestamp = int(original_array[index][2])
             current_index = index + 1
             while label is None:
-                timestamp = int(original_array[current_index][2])
+                timestamp = (
+                    int(original_array[current_index][2])
+                    if current_index < len(original_array)
+                    else 0
+                )
                 if timestamp < base_timestamp:
                     label = [
                         float(original_array[current_index - 1][0]),
