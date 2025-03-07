@@ -79,7 +79,7 @@ def data_generator(
                     if current_index < len(original_array)
                     else 0
                 )
-                if timestamp < base_timestamp:
+                if timestamp == 0:
                     label = [
                         float(original_array[current_index - 1][0]),
                         float(original_array[current_index - 1][1]),
