@@ -1,20 +1,21 @@
 import numpy as np
 import cv2
 
-class MemoryStack():
+
+class MemoryStack:
     stack: np.ndarray = None
     history: np.ndarray = None
 
-    def __init__(self, stack_size = 4):
+    def __init__(self, stack_size=4):
         self.stack = np.zeros((stack_size, 100, 400))
         self.size = 0
-        self.history = np.array([[0, 0]] * 10)
+        self.history = np.array([[0, 0]] * stack_size)
 
     def push(self, image):
         preprocessed_image = self.preprocess(image)
         self.stack = np.concatenate([self.stack[1:], [preprocessed_image]])
         return self.stack
-    
+
     def push_history(self, prediction):
         self.history = np.concatenate([self.history[1:], [prediction]])
         return self.history
@@ -26,5 +27,7 @@ class MemoryStack():
         sobel_x = cv2.Sobel(blurred, cv2.CV_64F, 1, 0, ksize=5)
         sobel_y = cv2.Sobel(blurred, cv2.CV_64F, 0, 1, ksize=5)
         sobel_combined = cv2.magnitude(sobel_x, sobel_y)
-        sobel_normalized = cv2.normalize(sobel_combined, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+        sobel_normalized = cv2.normalize(
+            sobel_combined, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U
+        )
         return sobel_normalized
