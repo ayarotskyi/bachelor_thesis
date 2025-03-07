@@ -33,23 +33,26 @@ def create_activation_animation(model_path, csv_path, images_dir):
 
     # Prepare animation data
     animation_data = []
+    image_memory_stack = agent.memory_stack.MemoryStack(4)
+    prev_index = 0
 
-    for index in tqdm(range(0, 75)):
-        image_memory_stack = agent.memory_stack.MemoryStack(4)
-        for i in range(0, 4):
-            current_index = index - i
-            image_filename = f"{current_index}.png"
-            image_path = os.path.join(images_dir, image_filename)
-            if current_index >= 0:
-                image_memory_stack.push(cv2.imread(image_path))
-                point = csv_data[current_index]
-                image_memory_stack.push_history([float(point[0]), float(point[1])])
+    for index in tqdm(range(0, 254)):
+        image_filename = f"{index}.png"
+        image_path = os.path.join(images_dir, image_filename)
+        if (
+            prev_index == 0
+            or int(csv_data[index][2]) - int(csv_data[prev_index][2]) > 1000 * 1 / 7
+        ):
+            image_memory_stack.push(cv2.imread(image_path))
+            prev_index = index
+        else:
+            continue
 
         original_image = cv2.resize(
             cv2.imread(os.path.join(images_dir, f"{index}.png"), cv2.IMREAD_COLOR),
             (400, 200),
         )
-        combined_image = np.concatenate(image_memory_stack.stack)
+        combined_image = np.concatenate(image_memory_stack.stack) / 127.5 - 1
 
         # Reshape image to match model's input shape
         input_image = combined_image.reshape(1, 400, 400, 1)
@@ -76,6 +79,7 @@ def create_activation_animation(model_path, csv_path, images_dir):
             },
             verbose=0,
         )
+        image_memory_stack.push_history(results[0])
 
         animation_data.append(
             {
