@@ -76,7 +76,7 @@ def data_generator(
                 current_index += 1
 
             yield (
-                image_memory_stack / 127.5 - 1,
+                image_memory_stack.reshape(100, 200, 10) / 127.5 - 1,
                 label,
             )
 
@@ -87,7 +87,7 @@ def create_tf_dataset(generator, batch_size):
     dataset = tf.data.Dataset.from_generator(
         generator,
         output_signature=(
-            tf.TensorSpec(shape=(10, 100, 200), dtype=tf.float32),
+            tf.TensorSpec(shape=(100, 200, 10), dtype=tf.float32),
             tf.TensorSpec(shape=(2,), dtype=tf.float32),
         ),
     )
