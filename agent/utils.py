@@ -612,11 +612,15 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
                 )
             )
             model.add(TimeDistributed(Flatten()))
+            model.add(TimeDistributed(Dropout(0.7)))
 
             # LSTM layers
             model.add(LSTM(100, activation="relu", return_sequences=True))
+            model.add(TimeDistributed(Dropout(0.5)))
             model.add(LSTM(50, activation="relu", return_sequences=True))
+            model.add(TimeDistributed(Dropout(0.7)))
             model.add(LSTM(10, activation="relu", return_sequences=True))
+            model.add(TimeDistributed(Dropout(0.5)))
             model.add(LSTM(2, activation="tanh", return_sequences=False))
 
         if model_path is not None:
