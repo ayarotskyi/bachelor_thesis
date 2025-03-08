@@ -13,7 +13,7 @@ ModelVersion = Enum(
         ("BETA", 6),
         ("BetaMultibranch", 7),
         ("BCNetV2", 8),
-        ("Conv3DV2", 9),
+        ("SB3CNN", 9),
     ],
 )
 
@@ -525,34 +525,32 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
 
             # Create model
             model = Model(inputs=[input1, input2], outputs=output)
-        elif model_version == ModelVersion.Conv3DV2:
+        elif model_version == ModelVersion.SB3CNN:
             model = Sequential(
                 [
-                    Conv3D(
+                    Conv2D(
                         32,
-                        kernel_size=(10, 8, 8),
+                        kernel_size=8,
+                        strides=4,
+                        padding="valid",
+                        input_shape=(100, 200, 10),
                         activation="relu",
-                        data_format="channels_last",
-                        name="conv1",
-                        input_shape=(10, 100, 200, 1),
                     ),
-                    Reshape((32, 93, 193, 1)),
-                    Conv3D(
+                    Conv2D(
                         64,
-                        kernel_size=(32, 4, 4),
+                        kernel_size=4,
+                        strides=2,
+                        padding="valid",
                         activation="relu",
-                        data_format="channels_last",
-                        name="conv2",
                     ),
-                    Reshape((64, 90, 190, 1)),
-                    Conv3D(
+                    Conv2D(
                         64,
-                        kernel_size=(64, 3, 3),
+                        kernel_size=3,
+                        strides=1,
+                        padding="valid",
                         activation="relu",
-                        data_format="channels_last",
-                        name="conv3",
                     ),
-                    GlobalAveragePooling3D(data_format="channels_last"),
+                    Flatten(),
                     Dense(512, activation="relu"),
                     Dropout(0.5),
                     Dense(2, activation="tanh"),

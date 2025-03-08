@@ -12,7 +12,7 @@ import agent.memory_stack
 
 def create_activation_animation(model_path, csv_path, images_dir):
     # Load model and data
-    model = agent.utils.load_model(model_path, agent.utils.ModelVersion.Conv3D)
+    model = agent.utils.load_model(model_path, agent.utils.ModelVersion.SB3CNN)
     csv_data = pd.read_csv(csv_path).to_numpy()
 
     # Prepare animation data
@@ -39,13 +39,13 @@ def create_activation_animation(model_path, csv_path, images_dir):
         combined_image = np.concatenate(image_memory_stack.stack)
 
         # Reshape image to match model's input shape
-        input_image = image_memory_stack.stack.reshape(1, 10, 100, 200) / 127.5 - 1
+        input_image = image_memory_stack.stack.reshape(1, 100, 200, 10) / 127.5 - 1
 
         # Create activation model
         layer_names = [
-            "conv1",
-            "conv2",
-            "conv3",
+            "conv2d",
+            "conv2d_1",
+            "conv2d_2",
         ]
         activation_model = tf.keras.Model(
             inputs=model.input,
@@ -132,14 +132,12 @@ def create_activation_animation(model_path, csv_path, images_dir):
     # Activation layers subplots
     ax_activations = []
     im_activations = []
-    layer_names = ["conv1", "conv2", "conv3"]
+    layer_names = ["conv2d", "conv2d_1", "conv2d_2"]
 
     for i in range(3):
         ax = fig.add_subplot(gs[1 if i < 2 else 2, (i + 1) % 3])
         ax.set_title(layer_names[i])
-        avg_activation = np.concatenate(
-            np.mean(animation_data[0]["activations"][i][0], axis=-1)
-        )
+        avg_activation = np.mean(animation_data[0]["activations"][i][0], axis=-1)
         avg_activation = avg_activation / np.max(avg_activation)
         im = ax.imshow(avg_activation, cmap="viridis")
         ax.axis("off")
@@ -162,9 +160,7 @@ def create_activation_animation(model_path, csv_path, images_dir):
 
         # Update activation layers
         for i in range(3):
-            avg_activation = np.concatenate(
-                np.mean(animation_data[0]["activations"][i][0], axis=-1)
-            )
+            avg_activation = np.mean(animation_data[0]["activations"][i][0], axis=-1)
             avg_activation = avg_activation / np.max(avg_activation)
             im_activations[i].set_array(avg_activation)
 
@@ -187,8 +183,8 @@ def create_activation_animation(model_path, csv_path, images_dir):
 
         # Update activation layers
         for i in range(3):
-            avg_activation = np.concatenate(
-                np.mean(animation_data[frame]["activations"][i][0], axis=-1)
+            avg_activation = np.mean(
+                animation_data[frame]["activations"][i][0], axis=-1
             )
             avg_activation = avg_activation / np.max(avg_activation)
             im_activations[i].set_array(avg_activation)
