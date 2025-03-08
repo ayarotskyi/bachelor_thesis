@@ -13,6 +13,7 @@ ModelVersion = Enum(
         ("BETA", 6),
         ("BetaMultibranch", 7),
         ("BCNetV2", 8),
+        ("Conv3DV2", 9),
     ],
 )
 
@@ -34,7 +35,7 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
             Conv3D,
             Input,
             Concatenate,
-            MaxPooling2D,
+            Reshape,
         )
     except:
         from tensorflow.keras import Sequential, Model
@@ -52,7 +53,7 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
             Conv3D,
             Input,
             Concatenate,
-            MaxPooling2D,
+            Reshape,
         )
     from larq.layers import QuantConv3D, QuantDense
 
@@ -524,57 +525,39 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
 
             # Create model
             model = Model(inputs=[input1, input2], outputs=output)
-        elif model_version == ModelVersion.BCNetV2:
-            input1 = Input(shape=(400, 400, 1), name="cnn_input")
-            x = Conv2D(
-                filters=24,
-                kernel_size=(5, 5),
-                strides=(2, 2),
-                activation="relu",
-                name="conv1",
-            )(input1)
-            x = Conv2D(
-                filters=36,
-                kernel_size=(5, 5),
-                strides=(2, 2),
-                activation="relu",
-                name="conv2",
-            )(x)
-            x = Conv2D(
-                filters=48,
-                kernel_size=(5, 5),
-                strides=(2, 2),
-                activation="relu",
-                name="conv3",
-            )(x)
-            x = Conv2D(filters=64, kernel_size=(3, 3), activation="relu", name="conv4")(
-                x
+        elif model_version == ModelVersion.Conv3DV2:
+            model = Sequential(
+                [
+                    Conv3D(
+                        32,
+                        kernel_size=(10, 8, 8),
+                        activation="relu",
+                        data_format="channels_last",
+                        name="conv1",
+                        input_shape=(10, 100, 200, 1),
+                    ),
+                    Reshape((32, 93, 193, 1)),
+                    Conv3D(
+                        64,
+                        kernel_size=(32, 4, 4),
+                        activation="relu",
+                        data_format="channels_last",
+                        name="conv2",
+                    ),
+                    Reshape((64, 90, 190, 1)),
+                    Conv3D(
+                        64,
+                        kernel_size=(64, 3, 3),
+                        activation="relu",
+                        data_format="channels_last",
+                        name="conv3",
+                    ),
+                    GlobalAveragePooling3D(data_format="channels_last"),
+                    Dense(512, activation="relu"),
+                    Dropout(0.5),
+                    Dense(2, activation="tanh"),
+                ]
             )
-            x = Conv2D(filters=64, kernel_size=(3, 3), activation="relu", name="conv5")(
-                x
-            )
-
-            x = Flatten()(x)
-            x = Dropout(0.5)(x)
-            x = Dense(200, activation="relu")(x)
-            x = Dropout(0.7)(x)
-            x = Dense(100, activation="relu")(x)
-            x = Dropout(0.5)(x)
-
-            # Second input branch (Dense)
-            input2 = Input(shape=(4, 2), name="dense_input")
-            y = Flatten()(input2)
-            y = Dense(50, activation="relu")(y)
-            y = Dropout(0.5)(y)
-
-            z = Concatenate()([x, y])
-            z = Dense(20, activation="relu")(z)
-            z = Dropout(0.7)(z)
-
-            output = Dense(2, activation="tanh")(z)  # Final output
-
-            # Create model
-            model = Model(inputs=[input1, input2], outputs=output)
 
         if model_path is not None:
             if not os.path.exists(model_path):

@@ -10,30 +10,14 @@ import agent.utils
 import agent.memory_stack
 
 
-def preprocess_image(image_path):
-    image = cv2.resize(cv2.imread(image_path, cv2.IMREAD_GRAYSCALE), (400, 200))[
-        100:, :
-    ]
-    if image is None:
-        raise ValueError(f"Could not read image from {image_path}")
-    blurred = cv2.GaussianBlur(image, (15, 15), 10)
-    median_intensity = np.median(blurred)
-    lower_threshold = int(max(0, (1.0 - 0.33) * median_intensity))
-    upper_threshold = int(min(255, (1.0 + 0.33) * median_intensity))
-    canny_edges = cv2.Canny(
-        blurred, threshold1=lower_threshold, threshold2=upper_threshold, apertureSize=5
-    )
-    return canny_edges
-
-
 def create_activation_animation(model_path, csv_path, images_dir):
     # Load model and data
-    model = agent.utils.load_model(model_path, agent.utils.ModelVersion.BCNetV2)
+    model = agent.utils.load_model(model_path, agent.utils.ModelVersion.Conv3D)
     csv_data = pd.read_csv(csv_path).to_numpy()
 
     # Prepare animation data
     animation_data = []
-    image_memory_stack = agent.memory_stack.MemoryStack(4)
+    image_memory_stack = agent.memory_stack.MemoryStack(10)
     prev_index = 0
 
     for index in tqdm(range(0, 254)):
@@ -41,7 +25,7 @@ def create_activation_animation(model_path, csv_path, images_dir):
         image_path = os.path.join(images_dir, image_filename)
         if (
             prev_index == 0
-            or int(csv_data[index][2]) - int(csv_data[prev_index][2]) > 1000 * 1 / 7
+            or int(csv_data[index][2]) - int(csv_data[prev_index][2]) > 0
         ):
             image_memory_stack.push(cv2.imread(image_path))
             prev_index = index
@@ -50,15 +34,19 @@ def create_activation_animation(model_path, csv_path, images_dir):
 
         original_image = cv2.resize(
             cv2.imread(os.path.join(images_dir, f"{index}.png"), cv2.IMREAD_COLOR),
-            (400, 200),
+            (200, 200),
         )
-        combined_image = np.concatenate(image_memory_stack.stack) / 127.5 - 1
+        combined_image = np.concatenate(image_memory_stack.stack)
 
         # Reshape image to match model's input shape
-        input_image = combined_image.reshape(1, 400, 400, 1)
+        input_image = image_memory_stack.stack.reshape(1, 10, 100, 200) / 127.5 - 1
 
         # Create activation model
-        layer_names = ["conv1", "conv2", "conv3", "conv4", "conv5"]
+        layer_names = [
+            "conv1",
+            "conv2",
+            "conv3",
+        ]
         activation_model = tf.keras.Model(
             inputs=model.input,
             outputs=[model.get_layer(name).output for name in layer_names],
@@ -66,20 +54,18 @@ def create_activation_animation(model_path, csv_path, images_dir):
 
         # Get activations
         activations = activation_model.predict(
-            {
-                "cnn_input": input_image,
-                "dense_input": image_memory_stack.history.reshape(1, 4, 2),
-            },
+            input_image,
             verbose=0,
         )
         results = model.predict(
-            {
-                "cnn_input": input_image,
-                "dense_input": image_memory_stack.history.reshape(1, 4, 2),
-            },
+            input_image,
             verbose=0,
         )
-        image_memory_stack.push_history(results[0])
+        print(
+            np.mean(activations[0][0]),
+            np.mean(activations[1][0]),
+            np.mean(activations[2][0]),
+        )
 
         animation_data.append(
             {
@@ -146,12 +132,15 @@ def create_activation_animation(model_path, csv_path, images_dir):
     # Activation layers subplots
     ax_activations = []
     im_activations = []
-    layer_names = ["conv1", "conv2", "conv3", "conv4", "conv5"]
+    layer_names = ["conv1", "conv2", "conv3"]
 
-    for i in range(5):
+    for i in range(3):
         ax = fig.add_subplot(gs[1 if i < 2 else 2, (i + 1) % 3])
         ax.set_title(layer_names[i])
-        avg_activation = np.mean(animation_data[0]["activations"][i][0], axis=-1)
+        avg_activation = np.concatenate(
+            np.mean(animation_data[0]["activations"][i][0], axis=-1)
+        )
+        avg_activation = avg_activation / np.max(avg_activation)
         im = ax.imshow(avg_activation, cmap="viridis")
         ax.axis("off")
         ax_activations.append(ax)
@@ -172,8 +161,11 @@ def create_activation_animation(model_path, csv_path, images_dir):
         )
 
         # Update activation layers
-        for i in range(5):
-            avg_activation = np.mean(animation_data[0]["activations"][i][0], axis=-1)
+        for i in range(3):
+            avg_activation = np.concatenate(
+                np.mean(animation_data[0]["activations"][i][0], axis=-1)
+            )
+            avg_activation = avg_activation / np.max(avg_activation)
             im_activations[i].set_array(avg_activation)
 
         return [im_original, im_memory, point, predicted_point] + im_activations
@@ -194,10 +186,11 @@ def create_activation_animation(model_path, csv_path, images_dir):
         )
 
         # Update activation layers
-        for i in range(5):
-            avg_activation = np.mean(
-                animation_data[frame]["activations"][i][0], axis=-1
+        for i in range(3):
+            avg_activation = np.concatenate(
+                np.mean(animation_data[frame]["activations"][i][0], axis=-1)
             )
+            avg_activation = avg_activation / np.max(avg_activation)
             im_activations[i].set_array(avg_activation)
 
         return [im_original, im_memory, point, predicted_point] + im_activations
@@ -218,7 +211,7 @@ def create_activation_animation(model_path, csv_path, images_dir):
 
 
 # Example usage
-model_path = "model.h5"
+model_path = "best_model.h5"
 csv_path = "reduced_data/data.csv"
 images_dir = "reduced_data/images"
 

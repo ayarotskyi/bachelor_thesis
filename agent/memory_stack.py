@@ -7,7 +7,7 @@ class MemoryStack:
     history: np.ndarray = None
 
     def __init__(self, stack_size=4):
-        self.stack = np.zeros((stack_size, 100, 400))
+        self.stack = np.zeros((stack_size, 100, 200))
         self.size = 0
         self.history = np.array([[0, 0]] * stack_size)
 
@@ -22,7 +22,7 @@ class MemoryStack:
 
     @staticmethod
     def preprocess(image):
-        image = cv2.resize(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY), (400, 200))[100:, :]
+        image = cv2.resize(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY), (200, 200))[100:, :]
         blurred = cv2.GaussianBlur(image, (15, 15), 10)
         sobel_x = cv2.Sobel(blurred, cv2.CV_64F, 1, 0, ksize=5)
         sobel_y = cv2.Sobel(blurred, cv2.CV_64F, 0, 1, ksize=5)

@@ -3,6 +3,7 @@ import os
 import tensorflow as tf
 from agent.memory_stack import MemoryStack
 import cv2
+import time
 
 
 def data_generator(
@@ -23,8 +24,7 @@ def data_generator(
 
         for index in index_array:
             # Create memory stack
-            image_memory_stack = np.zeros((memory_stack_size, 100, 400))
-            history_stack = np.array([(0.0, 0.0)] * memory_stack_size)
+            image_memory_stack = np.zeros((memory_stack_size, 100, 200))
             stack_size = 0
             current_index = index
             next_timestamp = None
@@ -44,17 +44,6 @@ def data_generator(
                             [MemoryStack.preprocess(cv2.imread(image_path))],
                         ]
                     )
-                    history_stack = np.concatenate(
-                        [
-                            history_stack[1:],
-                            [
-                                (
-                                    float(original_array[current_index][0]),
-                                    float(original_array[current_index][1]),
-                                )
-                            ],
-                        ]
-                    )
                     stack_size += 1
                     next_timestamp = current_timestamp
 
@@ -64,11 +53,6 @@ def data_generator(
             image_memory_stack[memory_stack_size - stack_size :] = image_memory_stack[
                 memory_stack_size - stack_size :
             ][::-1]
-            history_stack[memory_stack_size - stack_size :] = history_stack[
-                memory_stack_size - stack_size :
-            ][::-1]
-
-            image_memory_stack = np.concatenate(image_memory_stack) / 127.5 - 1
 
             label = None
             base_timestamp = int(original_array[index][2])
@@ -92,10 +76,7 @@ def data_generator(
                 current_index += 1
 
             yield (
-                {
-                    "cnn_input": image_memory_stack,
-                    "dense_input": history_stack,
-                },
+                image_memory_stack / 127.5 - 1,
                 label,
             )
 
@@ -106,14 +87,7 @@ def create_tf_dataset(generator, batch_size):
     dataset = tf.data.Dataset.from_generator(
         generator,
         output_signature=(
-            {
-                "cnn_input": tf.TensorSpec(
-                    shape=(400, 400), dtype=tf.float32
-                ),  # First input (CNN)
-                "dense_input": tf.TensorSpec(
-                    shape=(4, 2), dtype=tf.float32
-                ),  # Second input (Dense)
-            },
+            tf.TensorSpec(shape=(10, 100, 200), dtype=tf.float32),
             tf.TensorSpec(shape=(2,), dtype=tf.float32),
         ),
     )
