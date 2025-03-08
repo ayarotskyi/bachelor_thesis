@@ -613,15 +613,11 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
             )
             model.add(TimeDistributed(Flatten()))
 
-            # Reshape for LSTM input (time_steps, features)
-            model.add(LSTM(100, return_sequences=True))
-            model.add(LSTM(50, return_sequences=False))
-
-            # Fully connected layers
-            model.add(Dense(100, activation="relu"))
-            model.add(Dense(50, activation="relu"))
-            model.add(Dense(10, activation="relu"))
-            model.add(Dense(2, activation="tanh"))
+            # LSTM layers
+            model.add(LSTM(100, activation="relu", return_sequences=True))
+            model.add(LSTM(50, activation="relu", return_sequences=True))
+            model.add(LSTM(10, activation="relu", return_sequences=True))
+            model.add(LSTM(2, activation="tanh", return_sequences=False))
 
         if model_path is not None:
             if not os.path.exists(model_path):
