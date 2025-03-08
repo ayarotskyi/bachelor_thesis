@@ -64,7 +64,7 @@ if __name__ == "__main__":
         min_fps=7,
     )
 
-    model = agent.utils.load_model(None, agent.utils.ModelVersion.Conv3DV2)
+    model = agent.utils.load_model(None, agent.utils.ModelVersion.BCNetLSTM)
     print(model.summary())
 
     model.compile(loss="mse", optimizer="adam")

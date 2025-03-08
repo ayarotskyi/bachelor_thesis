@@ -14,6 +14,7 @@ ModelVersion = Enum(
         ("BetaMultibranch", 7),
         ("BCNetV2", 8),
         ("Conv3DV2", 9),
+        ("BCNetLSTM", 10),
     ],
 )
 
@@ -36,6 +37,7 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
             Input,
             Concatenate,
             Reshape,
+            LSTM,
         )
     except:
         from tensorflow.keras import Sequential, Model
@@ -54,6 +56,7 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
             Input,
             Concatenate,
             Reshape,
+            LSTM,
         )
     from larq.layers import QuantConv3D, QuantDense
 
@@ -558,6 +561,68 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
                     Dense(2, activation="tanh"),
                 ]
             )
+        elif model_version == ModelVersion.BCNetLSTM:
+            time_steps = 10  # Time domain size
+            ch, row, col = 1, 100, 200  # Updated dimensions
+
+            model = Sequential()
+
+            # Convolutional layers
+            model.add(
+                TimeDistributed(
+                    Conv2D(
+                        24,
+                        kernel_size=(5, 5),
+                        strides=(2, 2),
+                        activation="relu",
+                        name="conv1",
+                    ),
+                    input_shape=(time_steps, row, col, ch),
+                )
+            )
+            model.add(
+                TimeDistributed(
+                    Conv2D(
+                        36,
+                        kernel_size=(5, 5),
+                        strides=(2, 2),
+                        activation="relu",
+                        name="conv2",
+                    )
+                )
+            )
+            model.add(
+                TimeDistributed(
+                    Conv2D(
+                        48,
+                        kernel_size=(5, 5),
+                        strides=(2, 2),
+                        activation="relu",
+                        name="conv3",
+                    )
+                )
+            )
+            model.add(
+                TimeDistributed(
+                    Conv2D(64, kernel_size=(3, 3), activation="relu", name="conv4")
+                )
+            )
+            model.add(
+                TimeDistributed(
+                    Conv2D(64, kernel_size=(3, 3), activation="relu", name="conv5")
+                )
+            )
+            model.add(TimeDistributed(Flatten()))
+
+            # Reshape for LSTM input (time_steps, features)
+            model.add(LSTM(100, return_sequences=True))
+            model.add(LSTM(50, return_sequences=False))
+
+            # Fully connected layers
+            model.add(Dense(100, activation="relu"))
+            model.add(Dense(50, activation="relu"))
+            model.add(Dense(10, activation="relu"))
+            model.add(Dense(2, activation="tanh"))
 
         if model_path is not None:
             if not os.path.exists(model_path):
