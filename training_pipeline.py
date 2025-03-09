@@ -30,7 +30,7 @@ def prepare_datasets(
             train_array,
             image_dir,
             original_array,
-            10,
+            3,
             augmentations=[],
             min_fps=min_fps,
             max_fps=max_fps,
@@ -42,7 +42,7 @@ def prepare_datasets(
             test_array,
             image_dir,
             original_array,
-            10,
+            3,
             augmentations=[],
             min_fps=min_fps,
             max_fps=max_fps,
@@ -64,7 +64,7 @@ if __name__ == "__main__":
         min_fps=7,
     )
 
-    model = agent.utils.load_model(None, agent.utils.ModelVersion.BCNetLSTM)
+    model = agent.utils.load_model(None, agent.utils.ModelVersion.DAVE2)
     print(model.summary())
 
     model.compile(loss="mse", optimizer="adam")

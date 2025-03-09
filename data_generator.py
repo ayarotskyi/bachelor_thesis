@@ -1,9 +1,8 @@
 import numpy as np
 import os
 import tensorflow as tf
-from agent.memory_stack import MemoryStack
+from agent.memory_stack import MemoryStackDAVE2
 import cv2
-import time
 
 
 def data_generator(
@@ -24,7 +23,7 @@ def data_generator(
 
         for index in index_array:
             # Create memory stack
-            image_memory_stack = np.zeros((memory_stack_size, 100, 200))
+            image_memory_stack = np.zeros((memory_stack_size, 22, 200, 3))
             stack_size = 0
             current_index = index
             next_timestamp = None
@@ -41,7 +40,7 @@ def data_generator(
                     image_memory_stack = np.concatenate(
                         [
                             image_memory_stack[1:],
-                            [MemoryStack.preprocess(cv2.imread(image_path))],
+                            [MemoryStackDAVE2.preprocess(cv2.imread(image_path))],
                         ]
                     )
                     stack_size += 1
@@ -76,7 +75,7 @@ def data_generator(
                 current_index += 1
 
             yield (
-                image_memory_stack.reshape(10, 100, 200) / 127.5 - 1,
+                image_memory_stack.reshape(66, 200, 3) / 127.5 - 1,
                 label,
             )
 
@@ -87,7 +86,7 @@ def create_tf_dataset(generator, batch_size):
     dataset = tf.data.Dataset.from_generator(
         generator,
         output_signature=(
-            tf.TensorSpec(shape=(10, 100, 200), dtype=tf.float32),
+            tf.TensorSpec(shape=(66, 200, 3), dtype=tf.float32),
             tf.TensorSpec(shape=(2,), dtype=tf.float32),
         ),
     )

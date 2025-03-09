@@ -31,3 +31,15 @@ class MemoryStack:
             sobel_combined, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U
         )
         return sobel_normalized
+
+
+class MemoryStackDAVE2(MemoryStack):
+    def __init__(self, stack_size=3):
+        self.stack = np.zeros((stack_size, 22, 200, 3))
+        self.size = 0
+        self.history = np.array([[0, 0]] * stack_size)
+
+    @staticmethod
+    def preprocess(image):
+        image = cv2.resize(image, (200, 200))[100:122, :]
+        return image
