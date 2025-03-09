@@ -23,6 +23,7 @@ ModelVersion = Enum(
 def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM):
     try:
         from keras import Sequential, Model
+        from keras.regularizers import l2
         from keras.layers import (
             Flatten,
             Dense,
@@ -37,11 +38,11 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
             Conv3D,
             Input,
             Concatenate,
-            Reshape,
             LSTM,
         )
     except:
         from tensorflow.keras import Sequential, Model
+        from tensorflow.keras.regularizers import l2
         from tensorflow.keras.layers import (
             Flatten,
             Dense,
@@ -56,7 +57,6 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
             Conv3D,
             Input,
             Concatenate,
-            Reshape,
             LSTM,
         )
     from larq.layers import QuantConv3D, QuantDense
@@ -575,6 +575,7 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
                         strides=(2, 2),
                         activation="relu",
                         name="conv1",
+                        kernel_regularizer=l2(1e-4),
                     ),
                     input_shape=(time_steps, row, col, ch),
                 )
@@ -587,6 +588,7 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
                         strides=(2, 2),
                         activation="relu",
                         name="conv2",
+                        kernel_regularizer=l2(1e-4),
                     )
                 )
             )
@@ -598,30 +600,71 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
                         strides=(2, 2),
                         activation="relu",
                         name="conv3",
+                        kernel_regularizer=l2(1e-4),
                     )
                 )
             )
             model.add(
                 TimeDistributed(
-                    Conv2D(64, kernel_size=(3, 3), activation="relu", name="conv4")
+                    Conv2D(
+                        64,
+                        kernel_size=(3, 3),
+                        activation="relu",
+                        name="conv4",
+                        kernel_regularizer=l2(1e-4),
+                    )
                 )
             )
             model.add(
                 TimeDistributed(
-                    Conv2D(64, kernel_size=(3, 3), activation="relu", name="conv5")
+                    Conv2D(
+                        64,
+                        kernel_size=(3, 3),
+                        activation="relu",
+                        name="conv5",
+                        kernel_regularizer=l2(1e-4),
+                    )
                 )
             )
             model.add(TimeDistributed(Flatten()))
-            model.add(TimeDistributed(Dropout(0.7)))
+            model.add(TimeDistributed(Dropout(0.5)))
 
             # LSTM layers
-            model.add(LSTM(100, activation="relu", return_sequences=True))
+            model.add(
+                LSTM(
+                    100,
+                    activation="tanh",
+                    return_sequences=True,
+                    kernel_regularizer=l2(1e-4),
+                )
+            )
+            model.add(TimeDistributed(Dropout(0.4)))
+            model.add(
+                LSTM(
+                    50,
+                    activation="tanh",
+                    return_sequences=True,
+                    kernel_regularizer=l2(1e-4),
+                )
+            )
             model.add(TimeDistributed(Dropout(0.5)))
-            model.add(LSTM(50, activation="relu", return_sequences=True))
-            model.add(TimeDistributed(Dropout(0.7)))
-            model.add(LSTM(10, activation="relu", return_sequences=True))
-            model.add(TimeDistributed(Dropout(0.5)))
-            model.add(LSTM(2, activation="tanh", return_sequences=False))
+            model.add(
+                LSTM(
+                    10,
+                    activation="tanh",
+                    return_sequences=True,
+                    kernel_regularizer=l2(1e-4),
+                )
+            )
+            model.add(TimeDistributed(Dropout(0.4)))
+            model.add(
+                LSTM(
+                    2,
+                    activation="tanh",
+                    return_sequences=False,
+                    kernel_regularizer=l2(1e-4),
+                )
+            )
 
         if model_path is not None:
             if not os.path.exists(model_path):
