@@ -681,19 +681,13 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
             x = Flatten()(x)
 
             # First branch for x
-            x_fc = Dense(100, activation="relu")(x)
-            x_fc = Dense(50, activation="relu")(x_fc)
-            x_fc = Dense(10, activation="relu")(x_fc)
-            x_output = Dense(1, activation="tanh", name="x_output")(x_fc)
-
-            # Second branch for y
-            y_fc = Dense(100, activation="relu")(x)
-            y_fc = Dense(50, activation="relu")(y_fc)
-            y_fc = Dense(10, activation="relu")(y_fc)
-            y_output = Dense(1, activation="tanh", name="y_output")(y_fc)
+            x = Dense(100, activation="relu")(x)
+            x = Dense(50, activation="relu")(x)
+            x = Dense(10, activation="relu")(x)
+            output = Dense(1, activation="tanh", name="x_output")(x)
 
             # Define model
-            model = Model(inputs, [x_output, y_output])
+            model = Model(inputs, output)
 
         if model_path is not None:
             if not os.path.exists(model_path):
