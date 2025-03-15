@@ -1,25 +1,9 @@
 # TODO
 
-- Train BETA and Conv3D models with:
-  1. full/first versions of the dataset
-  2. prediction of first/second next frame speed
-- Try LARQ with:
-  1. future prediction
-  2. more memory
-- Fine-tune trajectory visualization
-
----
-
-- BETA
-  1. full/1 frame ✔️
-  2. full/2 frames ✔️
-  3. first/1 frame
-  4. first/2 frames
-- Conv3D
-  1. full/1 frame ✔️
-  2. full/2 frames ⏳
-  3. first/1 frame
-  4. first/2 frames
+1. Spatial augmentation techniques (flip, scaling, shift, rotation)
+2. Temporal augmentation techniques
+3. Remove bias from dataset
+4. Train the model using combinations of above mentioned approaches
 
 # Environment setup:
 
