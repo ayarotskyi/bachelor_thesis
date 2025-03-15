@@ -17,7 +17,7 @@ def prepare_datasets(
     test_split=0.2,
 ):
     # 1. Read CSV file
-    array = pd.read_csv(csv_path).to_numpy()[:15008]
+    array = pd.read_csv(csv_path).to_numpy()[:64]
     original_array = np.copy(array)
     index_array = np.arange(len(array))
 
@@ -30,8 +30,8 @@ def prepare_datasets(
             train_array,
             image_dir,
             original_array,
-            3,
-            augmentations=[],
+            10,
+            augmentation_multiplier=2,
             min_fps=min_fps,
             max_fps=max_fps,
         ),
@@ -42,8 +42,8 @@ def prepare_datasets(
             test_array,
             image_dir,
             original_array,
-            3,
-            augmentations=[],
+            10,
+            augmentation_multiplier=0,
             min_fps=min_fps,
             max_fps=max_fps,
             shuffle=False,
@@ -60,11 +60,11 @@ if __name__ == "__main__":
         image_dir="reduced_data/images",
         csv_path="reduced_data/data.csv",
         batch_size=32,
-        max_fps=7,
-        min_fps=7,
+        max_fps=6,
+        min_fps=4,
     )
 
-    model = agent.utils.load_model(None, agent.utils.ModelVersion.DAVE2)
+    model = agent.utils.load_model(None, agent.utils.ModelVersion.BCNetLSTM)
     print(model.summary())
 
     model.compile(loss="mse", optimizer="adam")
