@@ -9,15 +9,15 @@ import keras_tuner as kt
 
 def apply_augmentations(image, hp: kt.HyperParameters):
     if random.randint(0, 100) > 50:
-        max_shift = hp.Int("max_shift", 0, 10)
+        max_shift = hp.Int("max_shift", 1, 10)
         dx = np.random.randint(-max_shift, max_shift)
         dy = np.random.randint(-max_shift, max_shift)
         M = np.float32([[1, 0, dx], [0, 1, dy]])
         image = cv2.warpAffine(image, M, (image.shape[1], image.shape[0]))
 
     if random.randint(0, 100) > 50:
-        max_angle = hp.Int("max_angle", 0, 10)
-        max_scale_factor = hp.Float("max_scale_factor", 0.0, 0.2)
+        max_angle = hp.Int("max_angle", 1, 10)
+        max_scale_factor = hp.Float("max_scale_factor", 0.01, 0.2)
         angle = np.random.uniform(-max_angle, max_angle)
         scale_factor = np.random.uniform(1 - max_scale_factor, 1 + max_scale_factor)
         h, w = image.shape[:2]
@@ -50,7 +50,7 @@ def get_dataset_pair(
     current_index = index
     next_timestamp = None
 
-    while stack_size < memory_stack_size:
+    while stack_size < memory_stack_size and current_index >= 0:
         image_filename = f"{current_index}.png"
         image_path = os.path.join(image_dir, image_filename)
         current_timestamp = int(original_array[current_index][2])
@@ -103,7 +103,7 @@ def get_dataset_pair(
         current_index += 1
 
     return (
-        image_memory_stack.reshape(10, 100, 200) / 127.5 - 1,
+        image_memory_stack / 127.5 - 1,
         label,
     )
 
@@ -143,7 +143,7 @@ def data_generator(
                     target_fps=np.random.uniform(
                         min_fps, max_fps
                     ),  # using different frequencies in augmented data
-                    augment=True,
+                    hp=hp,
                 )
 
             yield get_dataset_pair(
@@ -161,17 +161,17 @@ def data_generator(
                 original_array=original_array,
                 index=augmentation_index,
                 target_fps=np.random.uniform(min_fps, max_fps),
-                augment=True,
+                hp=hp,
             )
 
     return generator
 
 
-def create_tf_dataset(generator, batch_size):
+def create_tf_dataset(generator, batch_size, memory_size):
     dataset = tf.data.Dataset.from_generator(
         generator,
         output_signature=(
-            tf.TensorSpec(shape=(10, 100, 200), dtype=tf.float32),
+            tf.TensorSpec(shape=(memory_size, 100, 200), dtype=tf.float32),
             tf.TensorSpec(shape=(2,), dtype=tf.float32),
         ),
     )

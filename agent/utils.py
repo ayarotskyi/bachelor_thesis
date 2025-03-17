@@ -25,6 +25,7 @@ ModelVersion = Enum(
 def load_model(
     model_path: str,
     hp: kt.HyperParameters,
+    memory_size: int,
     model_version: ModelVersion = ModelVersion.LSTM,
 ):
     try:
@@ -567,7 +568,7 @@ def load_model(
                 ]
             )
         elif model_version == ModelVersion.BCNetLSTM:
-            time_steps = 10  # Time domain size
+            time_steps = memory_size  # Time domain size
             ch, row, col = 1, 100, 200  # Updated dimensions
 
             model = Sequential()
