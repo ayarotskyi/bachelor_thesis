@@ -1,5 +1,6 @@
 import os
 from enum import Enum
+import keras_tuner as kt
 
 ModelVersion = Enum(
     "ModelVersion",
@@ -21,7 +22,11 @@ ModelVersion = Enum(
 )
 
 
-def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM):
+def load_model(
+    model_path: str,
+    hp: kt.HyperParameters,
+    model_version: ModelVersion = ModelVersion.LSTM,
+):
     try:
         from keras import Sequential, Model
         from keras.regularizers import l2
@@ -567,6 +572,9 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
 
             model = Sequential()
 
+            dropout_rate = hp.Float("dropout_rate", 0.1, 0.4)
+            regularization_rate = hp.Float("regularization_rate", 1e-4, 1e-1)
+
             # Convolutional layers
             model.add(
                 TimeDistributed(
@@ -576,7 +584,7 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
                         strides=(2, 2),
                         activation="relu",
                         name="conv1",
-                        kernel_regularizer=l2(1e-4),
+                        kernel_regularizer=l2(regularization_rate),
                     ),
                     input_shape=(time_steps, row, col, ch),
                 )
@@ -589,7 +597,7 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
                         strides=(2, 2),
                         activation="relu",
                         name="conv2",
-                        kernel_regularizer=l2(1e-4),
+                        kernel_regularizer=l2(regularization_rate),
                     )
                 )
             )
@@ -601,7 +609,7 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
                         strides=(2, 2),
                         activation="relu",
                         name="conv3",
-                        kernel_regularizer=l2(1e-4),
+                        kernel_regularizer=l2(regularization_rate),
                     )
                 )
             )
@@ -612,7 +620,7 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
                         kernel_size=(3, 3),
                         activation="relu",
                         name="conv4",
-                        kernel_regularizer=l2(1e-4),
+                        kernel_regularizer=l2(regularization_rate),
                     )
                 )
             )
@@ -623,12 +631,12 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
                         kernel_size=(3, 3),
                         activation="relu",
                         name="conv5",
-                        kernel_regularizer=l2(1e-4),
+                        kernel_regularizer=l2(regularization_rate),
                     )
                 )
             )
             model.add(TimeDistributed(Flatten()))
-            model.add(TimeDistributed(Dropout(0.5)))
+            model.add(TimeDistributed(Dropout(dropout_rate + 0.2)))
 
             # LSTM layers
             model.add(
@@ -636,34 +644,34 @@ def load_model(model_path: str, model_version: ModelVersion = ModelVersion.LSTM)
                     100,
                     activation="tanh",
                     return_sequences=True,
-                    kernel_regularizer=l2(1e-4),
+                    kernel_regularizer=l2(regularization_rate),
                 )
             )
-            model.add(TimeDistributed(Dropout(0.4)))
+            model.add(TimeDistributed(Dropout(dropout_rate + 0.1)))
             model.add(
                 LSTM(
                     50,
                     activation="tanh",
                     return_sequences=True,
-                    kernel_regularizer=l2(1e-4),
+                    kernel_regularizer=l2(regularization_rate),
                 )
             )
-            model.add(TimeDistributed(Dropout(0.5)))
+            model.add(TimeDistributed(Dropout(dropout_rate + 0.2)))
             model.add(
                 LSTM(
                     10,
                     activation="tanh",
                     return_sequences=True,
-                    kernel_regularizer=l2(1e-4),
+                    kernel_regularizer=l2(regularization_rate),
                 )
             )
-            model.add(TimeDistributed(Dropout(0.4)))
+            model.add(TimeDistributed(Dropout(dropout_rate + 0.1)))
             model.add(
                 LSTM(
                     2,
                     activation="tanh",
                     return_sequences=False,
-                    kernel_regularizer=l2(1e-4),
+                    kernel_regularizer=l2(regularization_rate),
                 )
             )
         elif model_version == ModelVersion.DAVE2:

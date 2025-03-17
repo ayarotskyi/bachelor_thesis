@@ -4,26 +4,29 @@ import tensorflow as tf
 from agent.memory_stack import MemoryStack
 import cv2
 import random
+import keras_tuner as kt
 
 
-def apply_augmentations(image):
+def apply_augmentations(image, hp: kt.HyperParameters):
     if random.randint(0, 100) > 50:
-        max_shift_x = 10  # Max shift in pixels
-        max_shift_y = 10
-        dx = np.random.randint(-max_shift_x, max_shift_x)
-        dy = np.random.randint(-max_shift_y, max_shift_y)
+        max_shift = hp.Int("max_shift", 0, 10)
+        dx = np.random.randint(-max_shift, max_shift)
+        dy = np.random.randint(-max_shift, max_shift)
         M = np.float32([[1, 0, dx], [0, 1, dy]])
         image = cv2.warpAffine(image, M, (image.shape[1], image.shape[0]))
 
     if random.randint(0, 100) > 50:
-        angle = np.random.uniform(-10, 10)  # Random rotation between -10 and 10 degrees
-        scale_factor = np.random.uniform(0.9, 1.1)
+        max_angle = hp.Int("max_angle", 0, 10)
+        max_scale_factor = hp.Float("max_scale_factor", 0.0, 0.2)
+        angle = np.random.uniform(-max_angle, max_angle)
+        scale_factor = np.random.uniform(1 - max_scale_factor, 1 + max_scale_factor)
         h, w = image.shape[:2]
         M = cv2.getRotationMatrix2D((w // 2, h // 2), angle, scale_factor)
         image = cv2.warpAffine(image, M, (w, h))
 
     if random.randint(0, 100) > 50:
-        sigma = np.random.uniform(0, 0.1)
+        max_sigma = hp.Float("max_sigma", 0.1, 3)
+        sigma = np.random.uniform(0, max_sigma)
         noise = np.random.normal(0, sigma, image.shape).astype(
             np.uint8
         )  # Gaussian noise with mean 0 and std 10
@@ -34,7 +37,12 @@ def apply_augmentations(image):
 
 
 def get_dataset_pair(
-    memory_stack_size, image_dir, original_array, index, target_fps, augment=False
+    memory_stack_size,
+    image_dir,
+    original_array,
+    index,
+    target_fps,
+    hp: kt.HyperParameters = None,
 ):
     # Create memory stack
     image_memory_stack = np.zeros((memory_stack_size, 100, 200))
@@ -56,9 +64,9 @@ def get_dataset_pair(
                     image_memory_stack[1:],
                     [
                         apply_augmentations(
-                            MemoryStack.preprocess(cv2.imread(image_path))
+                            MemoryStack.preprocess(cv2.imread(image_path)), hp
                         )
-                        if augment
+                        if hp is not None
                         else MemoryStack.preprocess(cv2.imread(image_path))
                     ],
                 ]
@@ -109,6 +117,7 @@ def data_generator(
     max_fps,
     augmentation_multiplier,
     shuffle=True,
+    hp=None,
 ):
     def generator():
         if shuffle:
