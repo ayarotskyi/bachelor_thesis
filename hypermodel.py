@@ -16,7 +16,10 @@ def prepare_datasets(
     test_split=0.2,
 ):
     # 1. Read CSV file
-    array = pd.read_csv(csv_path).to_numpy()[:15008]
+    rng = np.random.default_rng()
+    array = rng.choice(
+        pd.read_csv(csv_path).to_numpy()[:15008], size=500, replace=False, axis=0
+    )
     original_array = np.copy(array)
     index_array = np.arange(len(array))
 
