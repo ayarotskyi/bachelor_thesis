@@ -17,11 +17,11 @@ def prepare_datasets(
 ):
     # 1. Read CSV file
     rng = np.random.default_rng()
-    array = rng.choice(
-        pd.read_csv(csv_path).to_numpy()[:15008], size=500, replace=False, axis=0
-    )
+    array = pd.read_csv(csv_path).to_numpy()[:15008]
     original_array = np.copy(array)
     index_array = np.arange(len(array))
+    index_array = rng.choice(index_array, size=500, replace=False, axis=0)
+    array = array[index_array]
 
     np.random.shuffle(array)
     split_index = int(len(index_array) * (1 - test_split))

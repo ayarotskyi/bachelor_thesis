@@ -7,7 +7,7 @@ if __name__ == "__main__":
     tuner = kt.BayesianOptimization(
         hypermodel=hypermodel.MyHyperModel(),
         objective="val_mae",
-        max_trials=100,  # Tests 50 configurations
+        max_trials=50,  # Tests 50 configurations
         executions_per_trial=1,
         directory="kt_model_tuning",
         project_name="model_tuning",
