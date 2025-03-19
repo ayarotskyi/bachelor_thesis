@@ -1,5 +1,6 @@
 import json
 import keras.callbacks
+import keras.optimizers
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -76,7 +77,9 @@ if __name__ == "__main__":
     )
     print(model.summary())
 
-    model.compile(loss="mse", optimizer="adam")
+    optimizer = keras.optimizers.Adam(learning_rate=0.0086)
+
+    model.compile(loss="mse", optimizer=optimizer)
 
     checkpoint_callback = keras.callbacks.ModelCheckpoint(
         filepath="best_model.h5",  # Save to this file
