@@ -573,8 +573,8 @@ def load_model(
 
             model = Sequential()
 
-            dropout_rate = hp.Float("dropout_rate", 0.1, 0.4)
-            regularization_rate = hp.Float("regularization_rate", 1e-4, 1e-1)
+            dropout_rate = 0.38
+            regularization_rate = hp.Float("regularization_rate", 1e-5, 1e-3)
 
             # Convolutional layers
             model.add(

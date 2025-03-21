@@ -26,7 +26,7 @@ def prepare_datasets(
     split_index = int(len(index_array) * (1 - test_split))
     train_array, test_array = index_array[:split_index], index_array[split_index:]
 
-    memory_size = hp.get("memory_size")
+    memory_size = 8
 
     train_dataset = create_tf_dataset(
         data_generator(
@@ -34,10 +34,9 @@ def prepare_datasets(
             image_dir,
             original_array,
             memory_size,
-            augmentation_multiplier=hp.Int("augmentation_multiplier", 1, 4),
+            augmentation_multiplier=hp.Int("augmentation_multiplier", 1, 2),
             min_fps=min_fps,
             max_fps=max_fps,
-            hp=hp,
         ),
         batch_size=batch_size,
         memory_size=memory_size,
@@ -63,14 +62,12 @@ def prepare_datasets(
 
 class MyHyperModel(kt.HyperModel):
     def build(self, hp: kt.HyperParameters):
-        memory_size = hp.Int("memory_size", 6, 12)
+        memory_size = 8
         model = agent.utils.load_model(
             None, hp, memory_size, agent.utils.ModelVersion.BCNetLSTM
         )
         model.compile(
-            optimizer=keras.optimizers.Adam(
-                hp.Float("learning_rate", 1e-4, 1e-2, sampling="log")
-            ),
+            optimizer=keras.optimizers.Adam(hp.Float("learning_rate", 1e-5, 1e-3)),
             loss="mse",
             metrics=["mae"],
         )

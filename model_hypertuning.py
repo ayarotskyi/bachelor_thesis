@@ -9,7 +9,7 @@ if __name__ == "__main__":
         objective="val_mae",
         max_trials=50,  # Tests 50 configurations
         executions_per_trial=1,
-        directory="kt_model_tuning",
+        directory="learning_rate_tuning",
         project_name="model_tuning",
         overwrite=False,
     )
