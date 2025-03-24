@@ -9,15 +9,10 @@ from data_generator import data_generator, create_tf_dataset
 
 
 def prepare_datasets(
-    image_dir,
-    csv_path,
-    min_fps,
-    max_fps,
-    batch_size=32,
-    test_split=0.2,
+    image_dir, csv_path, min_fps, max_fps, batch_size=32, test_split=0.2, memory_size=8
 ):
     # 1. Read CSV file
-    array = pd.read_csv(csv_path).to_numpy()[:64]
+    array = pd.read_csv(csv_path).to_numpy()[:15008]
     original_array = np.copy(array)
     index_array = np.arange(len(array))
 
@@ -30,11 +25,12 @@ def prepare_datasets(
             train_array,
             image_dir,
             original_array,
-            10,
-            augmentation_multiplier=2,
+            memory_size,
+            augmentation_multiplier=1,
             min_fps=min_fps,
             max_fps=max_fps,
         ),
+        memory_size=memory_size,
         batch_size=batch_size,
     )
     test_dataset = create_tf_dataset(
@@ -42,12 +38,13 @@ def prepare_datasets(
             test_array,
             image_dir,
             original_array,
-            10,
+            memory_size,
             augmentation_multiplier=0,
             min_fps=min_fps,
             max_fps=max_fps,
             shuffle=False,
         ),
+        memory_size=memory_size,
         batch_size=batch_size,
     )
 
@@ -55,6 +52,7 @@ def prepare_datasets(
 
 
 if __name__ == "__main__":
+    memory_size = 8
     # Example of how to use the function
     train_dataset, test_dataset = prepare_datasets(
         image_dir="reduced_data/images",
@@ -62,12 +60,17 @@ if __name__ == "__main__":
         batch_size=32,
         max_fps=6,
         min_fps=4,
+        memory_size=memory_size,
     )
 
-    model = agent.utils.load_model(None, agent.utils.ModelVersion.BCNetLSTM)
+    model = agent.utils.load_model(
+        None, memory_size, agent.utils.ModelVersion.BCNetLSTM
+    )
     print(model.summary())
 
-    model.compile(loss="mse", optimizer="adam")
+    optimizer = keras.optimizers.Adam(learning_rate=0.00025)
+
+    model.compile(loss="mse", optimizer=optimizer)
 
     checkpoint_callback = keras.callbacks.ModelCheckpoint(
         filepath="best_model.h5",  # Save to this file

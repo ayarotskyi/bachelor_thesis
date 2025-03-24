@@ -1,6 +1,5 @@
 import os
 from enum import Enum
-import keras_tuner as kt
 
 ModelVersion = Enum(
     "ModelVersion",
@@ -24,7 +23,6 @@ ModelVersion = Enum(
 
 def load_model(
     model_path: str,
-    hp: kt.HyperParameters,
     memory_size: int,
     model_version: ModelVersion = ModelVersion.LSTM,
 ):
@@ -574,7 +572,7 @@ def load_model(
             model = Sequential()
 
             dropout_rate = 0.38
-            regularization_rate = hp.Float("regularization_rate", 1e-5, 1e-3)
+            regularization_rate = 1e-4
 
             # Convolutional layers
             model.add(
