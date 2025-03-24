@@ -12,12 +12,12 @@ import agent.memory_stack
 
 def create_activation_animation(model_path, csv_path, images_dir):
     # Load model and data
-    model = agent.utils.load_model(model_path, agent.utils.ModelVersion.SB3CNN)
+    model = agent.utils.load_model(model_path, 8, agent.utils.ModelVersion.BCNetLSTM)
     csv_data = pd.read_csv(csv_path).to_numpy()
 
     # Prepare animation data
     animation_data = []
-    image_memory_stack = agent.memory_stack.MemoryStack(10)
+    image_memory_stack = agent.memory_stack.MemoryStack(8)
     prev_index = 0
 
     for index in tqdm(range(0, 254)):
@@ -25,7 +25,7 @@ def create_activation_animation(model_path, csv_path, images_dir):
         image_path = os.path.join(images_dir, image_filename)
         if (
             prev_index == 0
-            or int(csv_data[index][2]) - int(csv_data[prev_index][2]) > 0
+            or int(csv_data[index][2]) - int(csv_data[prev_index][2]) > 1000 / 6
         ):
             image_memory_stack.push(cv2.imread(image_path))
             prev_index = index
@@ -39,13 +39,15 @@ def create_activation_animation(model_path, csv_path, images_dir):
         combined_image = np.concatenate(image_memory_stack.stack)
 
         # Reshape image to match model's input shape
-        input_image = image_memory_stack.stack.reshape(1, 100, 200, 10) / 127.5 - 1
+        input_image = image_memory_stack.stack.reshape(1, 8, 100, 200, 1) / 127.5 - 1
 
         # Create activation model
         layer_names = [
-            "conv2d",
-            "conv2d_1",
-            "conv2d_2",
+            "time_distributed",
+            "time_distributed_1",
+            "time_distributed_2",
+            "time_distributed_3",
+            "time_distributed_4",
         ]
         activation_model = tf.keras.Model(
             inputs=model.input,
@@ -132,12 +134,20 @@ def create_activation_animation(model_path, csv_path, images_dir):
     # Activation layers subplots
     ax_activations = []
     im_activations = []
-    layer_names = ["conv2d", "conv2d_1", "conv2d_2"]
+    layer_names = [
+        "time_distributed",
+        "time_distributed_1",
+        "time_distributed_2",
+        "time_distributed_3",
+        "time_distributed_4",
+    ]
 
-    for i in range(3):
+    for i in range(5):
         ax = fig.add_subplot(gs[1 if i < 2 else 2, (i + 1) % 3])
         ax.set_title(layer_names[i])
-        avg_activation = np.mean(animation_data[0]["activations"][i][0], axis=-1)
+        avg_activation = np.concatenate(
+            np.mean(animation_data[0]["activations"][i][0], axis=-1)
+        )
         avg_activation = avg_activation / np.max(avg_activation)
         im = ax.imshow(avg_activation, cmap="viridis")
         ax.axis("off")
@@ -159,8 +169,10 @@ def create_activation_animation(model_path, csv_path, images_dir):
         )
 
         # Update activation layers
-        for i in range(3):
-            avg_activation = np.mean(animation_data[0]["activations"][i][0], axis=-1)
+        for i in range(5):
+            avg_activation = np.concatenate(
+                np.mean(animation_data[0]["activations"][i][0], axis=-1)
+            )
             avg_activation = avg_activation / np.max(avg_activation)
             im_activations[i].set_array(avg_activation)
 
@@ -182,9 +194,9 @@ def create_activation_animation(model_path, csv_path, images_dir):
         )
 
         # Update activation layers
-        for i in range(3):
-            avg_activation = np.mean(
-                animation_data[frame]["activations"][i][0], axis=-1
+        for i in range(5):
+            avg_activation = np.concatenate(
+                np.mean(animation_data[frame]["activations"][i][0], axis=-1)
             )
             avg_activation = avg_activation / np.max(avg_activation)
             im_activations[i].set_array(avg_activation)
@@ -197,7 +209,7 @@ def create_activation_animation(model_path, csv_path, images_dir):
         update,
         init_func=init,
         frames=len(animation_data),
-        interval=0.02,
+        interval=1000,
         blit=True,
     )
 
