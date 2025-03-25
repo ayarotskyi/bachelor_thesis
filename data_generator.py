@@ -116,6 +116,7 @@ def data_generator(
     max_fps,
     augmentation_multiplier,
     shuffle=True,
+    checkpoints: np.ndarray = None,
 ):
     def generator():
         if shuffle:
@@ -123,6 +124,21 @@ def data_generator(
         augmentation_queue = np.array([], dtype=np.int32)
 
         for index in index_array:
+            passes_checkpoint = True
+            if checkpoints is not None:
+                closest_checkpoint = checkpoints[0]
+                for checkpoint_index in reversed(range(0, len(checkpoints))):
+                    checkpoint = checkpoints[checkpoint_index]
+                    if checkpoint < index:
+                        closest_checkpoint = checkpoint
+                        break
+                for i in range(closest_checkpoint, index):
+                    if float(original_array[i, 2]) == 0:
+                        passes_checkpoint = False
+                        break
+            if not passes_checkpoint:
+                continue
+
             if augmentation_multiplier > 0:
                 augmentation_queue = np.append(
                     augmentation_queue, [index] * augmentation_multiplier
