@@ -1,8 +1,9 @@
 # TODO
 
-1. Spatial augmentation techniques (flip, scaling, shift, rotation)
-2. Temporal augmentation techniques
-3. Train the model using combinations of above mentioned approaches
+1. Train the last model with checkpoints on third obstacle
+2. Train the last model just on first difficulty one more time
+3. Train new model model on fixed dataset
+4. Create checkpoints for the second difficulty and fine-tune the last model on them
 
 # Environment setup:
 
