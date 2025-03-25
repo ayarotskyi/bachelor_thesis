@@ -12,11 +12,10 @@ def prepare_datasets(
     image_dir, csv_path, min_fps, max_fps, batch_size=32, test_split=0.2, memory_size=8
 ):
     # 1. Read CSV file
-    array = pd.read_csv(csv_path).to_numpy()[:15008]
-    original_array = np.copy(array)
-    index_array = np.arange(len(array))
+    original_array = pd.read_csv(csv_path).to_numpy()[:15008]
+    index_array = np.arange(len(original_array))
 
-    np.random.shuffle(array)
+    np.random.shuffle(index_array)
     split_index = int(len(index_array) * (1 - test_split))
     train_array, test_array = index_array[:split_index], index_array[split_index:]
 
