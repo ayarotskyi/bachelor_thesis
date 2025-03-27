@@ -32,7 +32,7 @@ def predict(camera, queue: multiprocessing.Queue):
     while True:
         frame = camera.value
         preprocessed_stack = memory_stack.push(frame)
-        input_image = preprocessed_stack.reshape(1, 10, 100, 200, 1) / 127.5 - 1
+        input_image = preprocessed_stack.reshape(1, 10, 100, 200, 1) / 255.0
         prediction = model.predict(
             input_image,
             verbose=0,

@@ -571,7 +571,7 @@ def load_model(
 
             model = Sequential()
 
-            dropout_rate = 0.38
+            dropout_rate = 0.1
             regularization_rate = 1e-4
 
             # Convolutional layers
@@ -588,6 +588,7 @@ def load_model(
                     input_shape=(time_steps, row, col, ch),
                 )
             )
+            model.add(TimeDistributed(BatchNormalization()))
             model.add(
                 TimeDistributed(
                     Conv2D(
@@ -600,6 +601,7 @@ def load_model(
                     )
                 )
             )
+            model.add(TimeDistributed(BatchNormalization()))
             model.add(
                 TimeDistributed(
                     Conv2D(
@@ -612,6 +614,7 @@ def load_model(
                     )
                 )
             )
+            model.add(TimeDistributed(BatchNormalization()))
             model.add(
                 TimeDistributed(
                     Conv2D(
@@ -623,6 +626,7 @@ def load_model(
                     )
                 )
             )
+            model.add(TimeDistributed(BatchNormalization()))
             model.add(
                 TimeDistributed(
                     Conv2D(
@@ -634,6 +638,7 @@ def load_model(
                     )
                 )
             )
+            model.add(TimeDistributed(BatchNormalization()))
             model.add(TimeDistributed(Flatten()))
             model.add(TimeDistributed(Dropout(dropout_rate + 0.2)))
 
