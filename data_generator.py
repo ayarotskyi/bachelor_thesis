@@ -102,7 +102,7 @@ def get_dataset_pair(
         current_index += 1
 
     return (
-        image_memory_stack / 255.0,
+        image_memory_stack,
         label,
     )
 

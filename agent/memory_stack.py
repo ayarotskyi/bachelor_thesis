@@ -30,7 +30,7 @@ class MemoryStack:
         sobel_normalized = cv2.normalize(
             sobel_combined, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U
         )
-        return sobel_normalized
+        return sobel_normalized / 175.0 - 1
 
 
 class MemoryStackDAVE2(MemoryStack):
