@@ -34,9 +34,6 @@ def prepare_datasets(
             augmentation_multiplier=1,
             min_fps=min_fps,
             max_fps=max_fps,
-            checkpoints=np.array(
-                np.load("checkpoints/third_obstacle.npy"), dtype=np.int32
-            ),
         ),
         memory_size=memory_size,
         batch_size=batch_size,
