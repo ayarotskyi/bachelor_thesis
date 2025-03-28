@@ -571,7 +571,7 @@ def load_model(
 
             model = Sequential()
 
-            dropout_rate = 0.1
+            dropout_rate = 0.2
             regularization_rate = 1e-4
 
             # Convolutional layers
@@ -598,6 +598,7 @@ def load_model(
                         activation="relu",
                         name="conv2",
                         kernel_regularizer=l2(regularization_rate),
+                        kernel_initializer="he_normal",
                     )
                 )
             )
@@ -611,6 +612,7 @@ def load_model(
                         activation="relu",
                         name="conv3",
                         kernel_regularizer=l2(regularization_rate),
+                        kernel_initializer="he_normal",
                     )
                 )
             )
@@ -623,6 +625,7 @@ def load_model(
                         activation="relu",
                         name="conv4",
                         kernel_regularizer=l2(regularization_rate),
+                        kernel_initializer="he_normal",
                     )
                 )
             )
@@ -635,6 +638,7 @@ def load_model(
                         activation="relu",
                         name="conv5",
                         kernel_regularizer=l2(regularization_rate),
+                        kernel_initializer="he_normal",
                     )
                 )
             )
@@ -649,6 +653,7 @@ def load_model(
                     activation="tanh",
                     return_sequences=True,
                     kernel_regularizer=l2(regularization_rate),
+                    kernel_initializer="glorot_normal",
                 )
             )
             model.add(TimeDistributed(Dropout(dropout_rate + 0.1)))
@@ -658,6 +663,7 @@ def load_model(
                     activation="tanh",
                     return_sequences=True,
                     kernel_regularizer=l2(regularization_rate),
+                    kernel_initializer="glorot_normal",
                 )
             )
             model.add(TimeDistributed(Dropout(dropout_rate + 0.2)))
@@ -667,6 +673,7 @@ def load_model(
                     activation="tanh",
                     return_sequences=True,
                     kernel_regularizer=l2(regularization_rate),
+                    kernel_initializer="glorot_normal",
                 )
             )
             model.add(TimeDistributed(Dropout(dropout_rate + 0.1)))
@@ -676,6 +683,7 @@ def load_model(
                     activation="tanh",
                     return_sequences=False,
                     kernel_regularizer=l2(regularization_rate),
+                    kernel_initializer="glorot_normal",
                 )
             )
         elif model_version == ModelVersion.DAVE2:
