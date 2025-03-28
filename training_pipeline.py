@@ -15,7 +15,6 @@ def prepare_datasets(
     original_array = pd.read_csv(csv_path).to_numpy()[:15008]
     index_array = np.arange(len(original_array))
 
-    np.random.shuffle(index_array)
     split_index = int(len(index_array) * (1 - test_split))
     test_index = np.random.randint(0, split_index)
     test_length = len(index_array) - split_index
