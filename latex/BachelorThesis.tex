@@ -12,16 +12,16 @@
 \documentclass[
   11pt,          % Schriftgröße
   DIV=10,
-  ngerman,        % für Umlaute, Silbentrennung etc.
+  english,        % für Umlaute, Silbentrennung etc.
   a4paper,        % Papierformat
   oneside,        % einseitiges Dokument
   titlepage,        % es wird eine Titelseite verwendet
   parskip=half,      % Abstand zwischen Absätzen (halbe Zeile)
   headings=normal, % Größe der Überschriften verkleinern
   numbers=withendperiod, % Fügt in den Überschriften nach den Zahlen einen Punkt ein
-  listof=totoc,        % Verzeichnisse im Inhaltsverzeichnis aufführen
-  bibliography=totoc,        % Literaturverzeichnis im Inhaltsverzeichnis aufführen
-  index=totoc,        % Index im Inhaltsverzeichnis aufführen
+  listof=totoc,        % Verzeichnisse im Contentsverzeichnis aufführen
+  bibliography=totoc,        % Literaturverzeichnis im Contentsverzeichnis aufführen
+  index=totoc,        % Index im Contentsverzeichnis aufführen
   captions=tableheading,    % Beschriftung von Tabellen oberhalb ausgeben
   final          % Status des Dokuments (final/draft)
 ]{scrreprt}
@@ -36,17 +36,17 @@
 
 % Erstellung eines Index und Abkürzungsverzeichnisses aktivieren -----------
 \makeindex
-% makeindex Masterarbeit.nlo -s nomencl.ist -o Masterarbeit.nls
+% makeindex Bachelorarbeit.nlo -s nomencl.ist -o Bachelorarbeit.nls
 \makenomenclature
 
 % Kopf- und Fußzeilen, Seitenränder etc. -----------------------------------
-\input{Seitenstil}
+\input{PageStyle.tex}
 
 \begin{document}
 % Eigene Definitionen für Silbentrennung
-\include{Silbentrennung}
+\include{Hyphenation}
 % Das eigentliche Dokument -------------------------------------------------
-%    Der eigentliche Inhalt des Dokuments beginnt hier. Die einzelnen Seiten
+%    Der eigentliche Content des Dokuments beginnt hier. Die einzelnen Seiten
 %    und Kapitel werden in eigene Dateien ausgelagert und hier nur inkludiert.
 % --------------------------------------------------------------------------
 % auch subsubsection nummerieren
@@ -56,10 +56,9 @@
 % keine Kopf-/Fußzeilen bei Deckblatt und Abstract
 \ofoot{}
 % Deckblatt
-\include{Deckblatt}
+\include{Cover}
 
-\include{Inhalt/Abstract}
-% \include{Inhalt/Danksagung}
+\include{Content/Abstract}
 \ofoot{\pagemark}
 
 % Seitennummerierung -------------------------------------------------------
@@ -68,15 +67,15 @@
 % --------------------------------------------------------------------------
 \pagenumbering{Roman}
 
-\tableofcontents      % Inhaltsverzeichnis
+\tableofcontents      % Contentsverzeichnis
 
 % Abkürzungsverzeichnis ----------------------------------------------------
-%\input{Inhalt/Glossar}
+%\input{Content/Glossar}
 %\printnomenclature
 %\label{sec:Glossar}
 
 \listoffigures          % Abbildungsverzeichnis
-\listoftables          % Tabellenverzeichnis
+\listoftables          % List of tables
 
 %\renewcommand{\lstlistlistingname}{Verzeichnis der Listings}
 %\lstlistoflistings
@@ -85,14 +84,14 @@
 \clearpage
 \pagenumbering{arabic}
 
-% Inhalt -------------------------------------------------------------------
+% Content -------------------------------------------------------------------
 %    Hier können jetzt die einzelnen Kapitel inkludiert werden. Sie müssen
 %    in den entsprechenden .TEX-Dateien vorliegen. Die Dateinamen können
 %     natürlich angepasst werden.
 % --------------------------------------------------------------------------
-\include{Inhalt/Einleitung}
+\include{Content/Introduction}
 
-%\include{Inhalt/Grundlagen...}
+%\include{Content/Grundlagen...}
 
 % Literaturverzeichnis -----------------------------------------------------
 %    Das Literaturverzeichnis wird aus der Datenbank erstellt.
@@ -105,23 +104,23 @@
 
 % \setcounter{page}{122}
 % \pagenumbering{gobble}
-\include{Inhalt/Erklaerung}  % Selbständigkeitserklärung
+\include{Content/Declaration}  % Selbständigkeitserklärung
 
 % Anhang -------------------------------------------------------------------
-%    Die Inhalte des Anhangs werden analog zu den Kapiteln inkludiert.
+%    Die Contente des Anhangs werden analog zu den Kapiteln inkludiert.
 %    Dies geschieht in der Datei Anhang.tex
 % --------------------------------------------------------------------------
 \appendix
 \clearpage
 \renewcommand*{\thesection}{\Alph{section}}
 \pagenumbering{Roman}
-%\include{Inhalt/Anhang}
+%\include{Content/Anhang}
 
 % Index --------------------------------------------------------------------
 %    Zum Erstellen eines Index, die folgende Zeile auskommentieren.
 % --------------------------------------------------------------------------
 %\printindex    % Index hier einfügen
 %\ofoot{}
-%\include{Inhalt/Thesen}  % Thesen
+%\include{Content/Thesen}  % Thesen
 
 \end{document}
