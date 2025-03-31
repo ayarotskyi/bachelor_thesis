@@ -1,0 +1,127 @@
+% Meta-Informationen -------------------------------------------------------
+%    Informationen über das Dokument, wie z.B. Titel, Autor, Matrikelnr. etc
+%    werden in der Datei _Meta.tex definiert und können danach global
+%    verwendet werden.
+% --------------------------------------------------------------------------
+\input{_Meta}
+
+% Dokumentenkopf -----------------------------------------------------------
+%   Diese Vorlage basiert auf "scrreprt" aus dem koma-script.
+%    Die Option draft sollte beim fertigen Dokument ausgeschaltet werden.
+% --------------------------------------------------------------------------
+\documentclass[
+  11pt,          % Schriftgröße
+  DIV=10,
+  ngerman,        % für Umlaute, Silbentrennung etc.
+  a4paper,        % Papierformat
+  oneside,        % einseitiges Dokument
+  titlepage,        % es wird eine Titelseite verwendet
+  parskip=half,      % Abstand zwischen Absätzen (halbe Zeile)
+  headings=normal, % Größe der Überschriften verkleinern
+  numbers=withendperiod, % Fügt in den Überschriften nach den Zahlen einen Punkt ein
+  listof=totoc,        % Verzeichnisse im Inhaltsverzeichnis aufführen
+  bibliography=totoc,        % Literaturverzeichnis im Inhaltsverzeichnis aufführen
+  index=totoc,        % Index im Inhaltsverzeichnis aufführen
+  captions=tableheading,    % Beschriftung von Tabellen oberhalb ausgeben
+  final          % Status des Dokuments (final/draft)
+]{scrreprt}
+
+\renewcommand*\chapterheadstartvskip{\vspace*{-1.0cm}}
+
+% Bentigte Packages -------------------------------------------------------
+%    Weitere Packages, die benötigt werden, sind in die Datei Packages.tex
+%    "ausgelagert", um die Vorlage möglichst übersichtlich zu halten.
+% --------------------------------------------------------------------------
+\input{Packages}
+
+% Erstellung eines Index und Abkürzungsverzeichnisses aktivieren -----------
+\makeindex
+% makeindex Masterarbeit.nlo -s nomencl.ist -o Masterarbeit.nls
+\makenomenclature
+
+% Kopf- und Fußzeilen, Seitenränder etc. -----------------------------------
+\input{Seitenstil}
+
+\begin{document}
+% Eigene Definitionen für Silbentrennung
+\include{Silbentrennung}
+% Das eigentliche Dokument -------------------------------------------------
+%    Der eigentliche Inhalt des Dokuments beginnt hier. Die einzelnen Seiten
+%    und Kapitel werden in eigene Dateien ausgelagert und hier nur inkludiert.
+% --------------------------------------------------------------------------
+% auch subsubsection nummerieren
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+
+% keine Kopf-/Fußzeilen bei Deckblatt und Abstract
+\ofoot{}
+% Deckblatt
+\include{Deckblatt}
+
+\include{Inhalt/Abstract}
+% \include{Inhalt/Danksagung}
+\ofoot{\pagemark}
+
+% Seitennummerierung -------------------------------------------------------
+%    Vor dem Hauptteil werden die Seiten in großen römischen Ziffern
+%    nummeriert...
+% --------------------------------------------------------------------------
+\pagenumbering{Roman}
+
+\tableofcontents      % Inhaltsverzeichnis
+
+% Abkürzungsverzeichnis ----------------------------------------------------
+%\input{Inhalt/Glossar}
+%\printnomenclature
+%\label{sec:Glossar}
+
+\listoffigures          % Abbildungsverzeichnis
+\listoftables          % Tabellenverzeichnis
+
+%\renewcommand{\lstlistlistingname}{Verzeichnis der Listings}
+%\lstlistoflistings
+
+% ...danach in normalen arabischen Ziffern ---------------------------------
+\clearpage
+\pagenumbering{arabic}
+
+% Inhalt -------------------------------------------------------------------
+%    Hier können jetzt die einzelnen Kapitel inkludiert werden. Sie müssen
+%    in den entsprechenden .TEX-Dateien vorliegen. Die Dateinamen können
+%     natürlich angepasst werden.
+% --------------------------------------------------------------------------
+\include{Inhalt/Einleitung}
+
+%\include{Inhalt/Grundlagen...}
+
+% Literaturverzeichnis -----------------------------------------------------
+%    Das Literaturverzeichnis wird aus der Datenbank erstellt.
+%    Die genaue Verwendung von biblatex wird hier jedoch nicht erklärt.
+%    Links:   https://ctan.org/pkg/biblatex?lang=de
+%            https://de.overleaf.com/learn/latex/Articles/Getting_started_with_BibLaTeX
+% --------------------------------------------------------------------------
+
+\printbibliography
+
+% \setcounter{page}{122}
+% \pagenumbering{gobble}
+\include{Inhalt/Erklaerung}  % Selbständigkeitserklärung
+
+% Anhang -------------------------------------------------------------------
+%    Die Inhalte des Anhangs werden analog zu den Kapiteln inkludiert.
+%    Dies geschieht in der Datei Anhang.tex
+% --------------------------------------------------------------------------
+\appendix
+\clearpage
+\renewcommand*{\thesection}{\Alph{section}}
+\pagenumbering{Roman}
+%\include{Inhalt/Anhang}
+
+% Index --------------------------------------------------------------------
+%    Zum Erstellen eines Index, die folgende Zeile auskommentieren.
+% --------------------------------------------------------------------------
+%\printindex    % Index hier einfügen
+%\ofoot{}
+%\include{Inhalt/Thesen}  % Thesen
+
+\end{document}
