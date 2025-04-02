@@ -1,3 +1,17 @@
 \chapter{Introduction}
 \label{cha:Introduction}
-\lipsum
+
+\section{Motivation}
+
+\section{Goals of the thesis}
+
+\section{Structure of the thesis}
+
+To assess the generalization abilities of the model the 2 levels of difficulties for the agent are introduced:
+\begin{enumerate}
+  \item \textbf{First level of difficulty:} In this setting the vehicle always starts from a certain position and the obstacles are also fixed at predetermined positions. This level of difficulty is used to test the basic skills of the model. As the environment remains constant, the robot can learn stable behavior through repeated training.
+  \item \textbf{Second level of difficulty:} In this setting the positions of both the robot and the obstacles will vary in a random fashion. On this level the generalization abilities of the model will be tested. Since each drive is performed differently and not in a way in which the model was trained, this difficulty level challenges the model's ability to spot and analyze more general features and not just to rely on memorization.
+\end{enumerate}
+
+The research is aimed to put clearness in the following questions: (1) Can the model be trained using Behavioral Cloning \autocite{8855753} to demonstrate human performance or even surpass it in the first difficulty? (2) Can the model be sufficiently generalized using behavioral cloning to demonstrate human performance or even surpass it in the second difficulty? (3) Can the Inverse Reinforcement Learning (IRL) \autocite{ng2000algorithms} \autocite{neu2012apprenticeshiplearningusinginverse} \autocites{lee2021approximateinversereinforcementlearning} approach eliminate the expected weaknesses of the Behavioral Cloning approach in mastering the course on both difficulty levels and contribute to successfully mastering the course? \\
+The last question will be answered with a help of literature, since there is no possibility to implement IRL algorithms in current settings.
