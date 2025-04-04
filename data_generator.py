@@ -40,7 +40,7 @@ def get_dataset_pair(
     index,
     target_fps,
     augment=False,
-    target_size=1,
+    target_size=200,
 ):
     # Create memory stack
     image_memory_stack = np.zeros(
@@ -126,7 +126,7 @@ def data_generator(
     augmentation_multiplier,
     shuffle=True,
     checkpoints: np.ndarray = None,
-    target_size=1,
+    target_size=200,
 ):
     def generator():
         if shuffle:

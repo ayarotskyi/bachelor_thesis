@@ -205,6 +205,7 @@ class MyHyperModel(kt.HyperModel):
             loss="mse",
             metrics=["mae"],
         )
+        model.summary()
         return model
 
     def fit(self, hp, model, **kwargs):
