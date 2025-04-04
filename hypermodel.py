@@ -134,8 +134,8 @@ class MyHyperModel(kt.HyperModel):
                 Conv2D(
                     64,
                     kernel_size=(
-                        max(int(target_size / 50) - 2, 1),
-                        max(int(target_size / 50) - 2, 1),
+                        max(int(target_size / 50) - 2, 2),
+                        max(int(target_size / 50) - 2, 2),
                     ),
                     activation="relu",
                     name="conv4",
@@ -149,8 +149,8 @@ class MyHyperModel(kt.HyperModel):
                 Conv2D(
                     64,
                     kernel_size=(
-                        max(int(target_size / 50) - 2, 1),
-                        max(int(target_size / 50) - 2, 1),
+                        max(int(target_size / 50) - 2, 2),
+                        max(int(target_size / 50) - 2, 2),
                     ),
                     activation="relu",
                     name="conv5",
