@@ -21,8 +21,10 @@ class MemoryStack:
         return self.history
 
     @staticmethod
-    def preprocess(image):
-        image = cv2.resize(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY), (200, 200))[100:, :]
+    def preprocess(image, target_size=200):
+        image = cv2.resize(
+            cv2.cvtColor(image, cv2.COLOR_BGR2GRAY), (target_size, target_size)
+        )[(target_size / 2) :, :]
         blurred = cv2.GaussianBlur(image, (15, 15), 10)
         sobel_x = cv2.Sobel(blurred, cv2.CV_64F, 1, 0, ksize=5)
         sobel_y = cv2.Sobel(blurred, cv2.CV_64F, 0, 1, ksize=5)

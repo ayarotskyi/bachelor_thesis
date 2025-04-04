@@ -42,9 +42,16 @@ def get_dataset_pair(
     index,
     target_fps,
     augment=False,
+    target_size=1,
 ):
     # Create memory stack
-    image_memory_stack = np.zeros((memory_stack_size, 100, 200))
+    image_memory_stack = np.zeros(
+        (
+            memory_stack_size,
+            int(target_size / 2),
+            int(target_size),
+        )
+    )
     stack_size = 0
     current_index = index
     next_timestamp = None
@@ -63,10 +70,14 @@ def get_dataset_pair(
                     image_memory_stack[1:],
                     [
                         apply_augmentations(
-                            MemoryStack.preprocess(cv2.imread(image_path))
+                            MemoryStack.preprocess(
+                                cv2.imread(image_path), target_size=target_size
+                            )
                         )
                         if augment
-                        else MemoryStack.preprocess(cv2.imread(image_path))
+                        else MemoryStack.preprocess(
+                            cv2.imread(image_path), target_size=target_size
+                        )
                     ],
                 ]
             )
@@ -117,6 +128,7 @@ def data_generator(
     augmentation_multiplier,
     shuffle=True,
     checkpoints: np.ndarray = None,
+    target_size=1,
 ):
     def generator():
         if shuffle:
@@ -158,6 +170,7 @@ def data_generator(
                         min_fps, max_fps
                     ),  # using different frequencies in augmented data
                     augment=True,
+                    target_size=target_size,
                 )
 
             yield get_dataset_pair(
@@ -166,6 +179,7 @@ def data_generator(
                 original_array=original_array,
                 index=index,
                 target_fps=min_fps,
+                target_size=target_size,
             )
 
         for augmentation_index in augmentation_queue:
@@ -176,6 +190,7 @@ def data_generator(
                 index=augmentation_index,
                 target_fps=np.random.uniform(min_fps, max_fps),
                 augment=True,
+                target_size=target_size,
             )
 
     return generator

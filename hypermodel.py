@@ -1,9 +1,18 @@
 import keras
 import keras_tuner as kt
-import agent.utils
 import pandas as pd
 import numpy as np
 from data_generator import data_generator, create_tf_dataset
+from keras.layers import (
+    TimeDistributed,
+    Conv2D,
+    BatchNormalization,
+    Flatten,
+    Dropout,
+    LSTM,
+)
+from keras.models import Sequential
+from keras.regularizers import l2
 
 
 def prepare_datasets(
@@ -34,9 +43,10 @@ def prepare_datasets(
             image_dir,
             original_array,
             memory_size,
-            augmentation_multiplier=hp.Int("augmentation_multiplier", 1, 2),
+            augmentation_multiplier=3,
             min_fps=min_fps,
             max_fps=max_fps,
+            target_size=hp.get("target_size"),
         ),
         batch_size=batch_size,
         memory_size=memory_size,
@@ -63,8 +73,122 @@ def prepare_datasets(
 class MyHyperModel(kt.HyperModel):
     def build(self, hp: kt.HyperParameters):
         memory_size = 8
-        model = agent.utils.load_model(
-            None, hp, memory_size, agent.utils.ModelVersion.BCNetLSTM
+
+        target_size = hp.Int("memory_stack_multiplier", 50, 300, 50)
+
+        time_steps = memory_size  # Time domain size
+        ch, row, col = 1, target_size / 2, target_size  # Updated dimensions
+
+        model = Sequential()
+
+        dropout_rate = 0.2
+        regularization_rate = 1e-4
+
+        # Convolutional layers
+        model.add(
+            TimeDistributed(
+                Conv2D(
+                    24,
+                    kernel_size=(5, 5),
+                    strides=(2, 2),
+                    activation="relu",
+                    name="conv1",
+                    kernel_regularizer=l2(regularization_rate),
+                ),
+                input_shape=(time_steps, row, col, ch),
+            )
+        )
+        model.add(TimeDistributed(BatchNormalization()))
+        model.add(
+            TimeDistributed(
+                Conv2D(
+                    36,
+                    kernel_size=(5, 5),
+                    strides=(2, 2),
+                    activation="relu",
+                    name="conv2",
+                    kernel_regularizer=l2(regularization_rate),
+                )
+            )
+        )
+        model.add(TimeDistributed(BatchNormalization()))
+        model.add(
+            TimeDistributed(
+                Conv2D(
+                    48,
+                    kernel_size=(5, 5),
+                    strides=(2, 2),
+                    activation="relu",
+                    name="conv3",
+                    kernel_regularizer=l2(regularization_rate),
+                )
+            )
+        )
+        model.add(TimeDistributed(BatchNormalization()))
+        model.add(
+            TimeDistributed(
+                Conv2D(
+                    64,
+                    kernel_size=(3, 3),
+                    activation="relu",
+                    name="conv4",
+                    kernel_regularizer=l2(regularization_rate),
+                )
+            )
+        )
+        model.add(TimeDistributed(BatchNormalization()))
+        model.add(
+            TimeDistributed(
+                Conv2D(
+                    64,
+                    kernel_size=(3, 3),
+                    activation="relu",
+                    name="conv5",
+                    kernel_regularizer=l2(regularization_rate),
+                )
+            )
+        )
+        model.add(TimeDistributed(BatchNormalization()))
+        model.add(TimeDistributed(Flatten()))
+        model.add(TimeDistributed(Dropout(dropout_rate + 0.2)))
+
+        # LSTM layers
+        model.add(
+            LSTM(
+                100,
+                activation="tanh",
+                return_sequences=True,
+                kernel_regularizer=l2(regularization_rate),
+            )
+        )
+        model.add(TimeDistributed(Dropout(dropout_rate + 0.1)))
+        model.add(
+            LSTM(
+                50,
+                activation="tanh",
+                return_sequences=True,
+                kernel_regularizer=l2(regularization_rate),
+            )
+        )
+        model.add(TimeDistributed(Dropout(dropout_rate + 0.2)))
+        third_lstm_layer = hp.Boolean("third_lstm_layer")
+        if third_lstm_layer:
+            model.add(
+                LSTM(
+                    10,
+                    activation="tanh",
+                    return_sequences=True,
+                    kernel_regularizer=l2(regularization_rate),
+                )
+            )
+            model.add(TimeDistributed(Dropout(dropout_rate + 0.1)))
+        model.add(
+            LSTM(
+                2,
+                activation="tanh",
+                return_sequences=False,
+                kernel_regularizer=l2(regularization_rate),
+            )
         )
         model.compile(
             optimizer=keras.optimizers.Adam(hp.Float("learning_rate", 1e-5, 1e-3)),
