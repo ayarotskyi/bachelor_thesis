@@ -87,7 +87,7 @@ if __name__ == "__main__":
     )
 
     early_stopping_callback = keras.callbacks.EarlyStopping(
-        monitor="val_loss", patience=10, restore_best_weights=True
+        monitor="val_loss", patience=20, restore_best_weights=True
     )
 
     reduce_lr_callback = keras.callbacks.ReduceLROnPlateau(

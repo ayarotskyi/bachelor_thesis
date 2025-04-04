@@ -622,6 +622,7 @@ def load_model(
                     Conv2D(
                         64,
                         kernel_size=(3, 3),
+                        strides=(2, 2),
                         activation="relu",
                         name="conv4",
                         kernel_regularizer=l2(regularization_rate),
@@ -635,6 +636,7 @@ def load_model(
                     Conv2D(
                         64,
                         kernel_size=(3, 3),
+                        strides=(2, 2),
                         activation="relu",
                         name="conv5",
                         kernel_regularizer=l2(regularization_rate),
