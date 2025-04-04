@@ -194,11 +194,13 @@ def data_generator(
     return generator
 
 
-def create_tf_dataset(generator, batch_size, memory_size):
+def create_tf_dataset(generator, batch_size, memory_size, target_size=200):
     dataset = tf.data.Dataset.from_generator(
         generator,
         output_signature=(
-            tf.TensorSpec(shape=(memory_size, 100, 200), dtype=tf.float32),
+            tf.TensorSpec(
+                shape=(memory_size, int(target_size / 2), target_size), dtype=tf.float32
+            ),
             tf.TensorSpec(shape=(2,), dtype=tf.float32),
         ),
     )

@@ -36,6 +36,7 @@ def prepare_datasets(
     train_array, test_array = index_array[:split_index], index_array[split_index:]
 
     memory_size = 8
+    target_size = hp.get("target_size")
 
     train_dataset = create_tf_dataset(
         data_generator(
@@ -46,10 +47,11 @@ def prepare_datasets(
             augmentation_multiplier=3,
             min_fps=min_fps,
             max_fps=max_fps,
-            target_size=hp.get("target_size"),
+            target_size=target_size,
         ),
         batch_size=batch_size,
         memory_size=memory_size,
+        target_size=target_size,
     )
 
     test_dataset = create_tf_dataset(
@@ -62,9 +64,11 @@ def prepare_datasets(
             min_fps=min_fps,
             max_fps=max_fps,
             shuffle=False,
+            target_size=target_size,
         ),
         batch_size=batch_size,
         memory_size=memory_size,
+        target_size=target_size,
     )
 
     return train_dataset, test_dataset
@@ -74,10 +78,10 @@ class MyHyperModel(kt.HyperModel):
     def build(self, hp: kt.HyperParameters):
         memory_size = 8
 
-        target_size = hp.Int("memory_stack_multiplier", 50, 300, 50)
+        target_size = hp.Int("target_size", 100, 300, 50)
 
         time_steps = memory_size  # Time domain size
-        ch, row, col = 1, target_size / 2, target_size  # Updated dimensions
+        ch, row, col = 1, int(target_size / 2), target_size  # Updated dimensions
 
         model = Sequential()
 
@@ -89,7 +93,7 @@ class MyHyperModel(kt.HyperModel):
             TimeDistributed(
                 Conv2D(
                     24,
-                    kernel_size=(5, 5),
+                    kernel_size=(int(target_size / 50), int(target_size / 50)),
                     strides=(2, 2),
                     activation="relu",
                     name="conv1",
@@ -103,7 +107,7 @@ class MyHyperModel(kt.HyperModel):
             TimeDistributed(
                 Conv2D(
                     36,
-                    kernel_size=(5, 5),
+                    kernel_size=(int(target_size / 50), int(target_size / 50)),
                     strides=(2, 2),
                     activation="relu",
                     name="conv2",
@@ -116,7 +120,7 @@ class MyHyperModel(kt.HyperModel):
             TimeDistributed(
                 Conv2D(
                     48,
-                    kernel_size=(5, 5),
+                    kernel_size=(int(target_size / 50), int(target_size / 50)),
                     strides=(2, 2),
                     activation="relu",
                     name="conv3",
@@ -129,7 +133,10 @@ class MyHyperModel(kt.HyperModel):
             TimeDistributed(
                 Conv2D(
                     64,
-                    kernel_size=(3, 3),
+                    kernel_size=(
+                        max(int(target_size / 50) - 2, 1),
+                        max(int(target_size / 50) - 2, 1),
+                    ),
                     activation="relu",
                     name="conv4",
                     kernel_regularizer=l2(regularization_rate),
@@ -141,7 +148,10 @@ class MyHyperModel(kt.HyperModel):
             TimeDistributed(
                 Conv2D(
                     64,
-                    kernel_size=(3, 3),
+                    kernel_size=(
+                        max(int(target_size / 50) - 2, 1),
+                        max(int(target_size / 50) - 2, 1),
+                    ),
                     activation="relu",
                     name="conv5",
                     kernel_regularizer=l2(regularization_rate),
@@ -155,7 +165,7 @@ class MyHyperModel(kt.HyperModel):
         # LSTM layers
         model.add(
             LSTM(
-                100,
+                int(target_size / 2),
                 activation="tanh",
                 return_sequences=True,
                 kernel_regularizer=l2(regularization_rate),
@@ -164,7 +174,7 @@ class MyHyperModel(kt.HyperModel):
         model.add(TimeDistributed(Dropout(dropout_rate + 0.1)))
         model.add(
             LSTM(
-                50,
+                int(target_size / 4),
                 activation="tanh",
                 return_sequences=True,
                 kernel_regularizer=l2(regularization_rate),
@@ -175,7 +185,7 @@ class MyHyperModel(kt.HyperModel):
         if third_lstm_layer:
             model.add(
                 LSTM(
-                    10,
+                    int(target_size / 20),
                     activation="tanh",
                     return_sequences=True,
                     kernel_regularizer=l2(regularization_rate),
@@ -191,7 +201,7 @@ class MyHyperModel(kt.HyperModel):
             )
         )
         model.compile(
-            optimizer=keras.optimizers.Adam(hp.Float("learning_rate", 1e-5, 1e-3)),
+            optimizer=keras.optimizers.Adam(0.00025),
             loss="mse",
             metrics=["mae"],
         )
