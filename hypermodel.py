@@ -165,7 +165,7 @@ class MyHyperModel(kt.HyperModel):
         # LSTM layers
         model.add(
             LSTM(
-                int(target_size / 2),
+                100,
                 activation="tanh",
                 return_sequences=True,
                 kernel_regularizer=l2(regularization_rate),
@@ -174,7 +174,7 @@ class MyHyperModel(kt.HyperModel):
         model.add(TimeDistributed(Dropout(dropout_rate + 0.1)))
         model.add(
             LSTM(
-                int(target_size / 4),
+                50,
                 activation="tanh",
                 return_sequences=True,
                 kernel_regularizer=l2(regularization_rate),
@@ -185,7 +185,7 @@ class MyHyperModel(kt.HyperModel):
         if third_lstm_layer:
             model.add(
                 LSTM(
-                    int(target_size / 20),
+                    10,
                     activation="tanh",
                     return_sequences=True,
                     kernel_regularizer=l2(regularization_rate),
