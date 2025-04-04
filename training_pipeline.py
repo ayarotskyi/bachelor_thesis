@@ -15,9 +15,15 @@ def prepare_datasets(
     original_array = pd.read_csv(csv_path).to_numpy()[:15008]
     index_array = np.arange(len(original_array))
 
-    np.random.shuffle(index_array)
     split_index = int(len(index_array) * (1 - test_split))
-    train_array, test_array = index_array[:split_index], index_array[split_index:]
+    test_index = np.random.randint(0, split_index)
+    test_length = len(index_array) - split_index
+    train_array, test_array = (
+        np.concatenate(
+            [index_array[:test_index], index_array[test_index + test_length :]]
+        ),
+        index_array[test_index : test_index + test_length],
+    )
 
     train_dataset = create_tf_dataset(
         data_generator(
@@ -28,9 +34,6 @@ def prepare_datasets(
             augmentation_multiplier=1,
             min_fps=min_fps,
             max_fps=max_fps,
-            checkpoints=np.array(
-                np.load("checkpoints/third_obstacle.npy"), dtype=np.int32
-            ),
         ),
         memory_size=memory_size,
         batch_size=batch_size,

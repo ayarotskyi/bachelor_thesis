@@ -18,21 +18,24 @@ jetbot = None
 
 
 def predict(camera, queue: multiprocessing.Queue):
+    memory_stack_size = 8
     global jetbot
-    memory_stack = MemoryStack(10)
+    memory_stack = MemoryStack(memory_stack_size)
 
     jetbot = utils.init_jetbot()
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     model_path = os.path.join(script_dir, os.path.pardir, "model.h5")
-    model = utils.load_model(model_path, model_version=utils.ModelVersion.BCNetLSTM)
+    model = utils.load_model(
+        model_path, memory_stack_size, model_version=utils.ModelVersion.BCNetLSTM
+    )
 
     prev_time = time.time()
     index = 0
     while True:
         frame = camera.value
         preprocessed_stack = memory_stack.push(frame)
-        input_image = preprocessed_stack.reshape(1, 10, 100, 200, 1) / 127.5 - 1
+        input_image = preprocessed_stack.reshape(1, memory_stack_size, 100, 200, 1)
         prediction = model.predict(
             input_image,
             verbose=0,
@@ -55,8 +58,8 @@ def predict(camera, queue: multiprocessing.Queue):
         else:
             pass
         current_time = time.time()
-        if (current_time - prev_time) < (1 / 7):
-            time.sleep((1 / 7) - (current_time - prev_time))
+        if (current_time - prev_time) < (1 / 4):
+            time.sleep((1 / 4) - (current_time - prev_time))
         current_time = time.time()
         print("fps:", 1 / (current_time - prev_time))
         prev_time = current_time

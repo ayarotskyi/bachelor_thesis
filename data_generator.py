@@ -24,13 +24,11 @@ def apply_augmentations(image):
         image = cv2.warpAffine(image, M, (w, h))
 
     if random.randint(0, 100) > 50:
-        max_sigma = 1.82
+        max_sigma = 0.1
         sigma = np.random.uniform(0, max_sigma)
-        noise = np.random.normal(0, sigma, image.shape).astype(
-            np.uint8
-        )  # Gaussian noise with mean 0 and std 10
+        noise = np.random.normal(0, sigma, image.shape).astype(np.float64)
         image = cv2.add(image, noise)
-        image = np.clip(image, 0, 255)  # Ensure pixel values stay in valid range
+        image = np.clip(image, -1, 1)  # Ensure pixel values stay in valid range
 
     return image
 
@@ -113,7 +111,7 @@ def get_dataset_pair(
         current_index += 1
 
     return (
-        image_memory_stack / 127.5 - 1,
+        image_memory_stack,
         label,
     )
 

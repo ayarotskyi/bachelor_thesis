@@ -1,9 +1,9 @@
 # TODO
 
-1. Train the last model with checkpoints on third obstacle
-2. Train the last model just on first difficulty one more time
-3. Train new model model on fixed dataset
-4. Create checkpoints for the second difficulty and fine-tune the last model on them
+Test all these models:
+
+- https://huggingface.co/datasets/ayarotskyi/bachelor_thesis/tree/main/models/BSNetLSTM/second_difficulty(fine-tuned)
+- https://huggingface.co/datasets/ayarotskyi/bachelor_thesis/tree/main/models/BSNetLSTM/first_difficulty(normalized)
 
 # Environment setup:
 

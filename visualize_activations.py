@@ -39,7 +39,7 @@ def create_activation_animation(model_path, csv_path, images_dir):
         combined_image = np.concatenate(image_memory_stack.stack)
 
         # Reshape image to match model's input shape
-        input_image = image_memory_stack.stack.reshape(1, 8, 100, 200, 1) / 127.5 - 1
+        input_image = image_memory_stack.stack.reshape(1, 8, 100, 200, 1)
 
         # Create activation model
         layer_names = [
