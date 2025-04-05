@@ -4,6 +4,7 @@ import tensorflow as tf
 from agent.memory_stack import MemoryStack
 import cv2
 import random
+from agent.utils import calculate_motor_speeds
 
 
 def apply_augmentations(image):
@@ -109,6 +110,9 @@ def get_dataset_pair(
                 float(original_array[current_index][1]),
             ]
         current_index += 1
+
+    left_speed, right_speed = calculate_motor_speeds(label[0], label[1])
+    label = [left_speed, right_speed]
 
     return (
         image_memory_stack,
