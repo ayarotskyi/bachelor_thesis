@@ -31,7 +31,7 @@ def prepare_datasets(
             image_dir,
             original_array,
             memory_size,
-            augmentation_multiplier=1,
+            augmentation_multiplier=3,
             min_fps=min_fps,
             max_fps=max_fps,
         ),
