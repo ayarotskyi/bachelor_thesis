@@ -3,9 +3,11 @@
 
 \section{Motivation}
 
+This thesis is focused on research of Imitation Learning in the domain of autonomous driving and mostly targets the Behavioral Cloning technique and uses it as a main instrument. There have already been many successful attempts to train a Convolutional Neural Network using Imitation Learning to make controlling decisions in the scenario of an autonomous driving vehicle, both in virtualized \autocite{8855753} and real \autocite{pan2019agileautonomousdrivingusing} \autocite{bojarski2016endendlearningselfdriving} environments. Some of them are aimed for training the model to perform controls according to the trafficking rules in an urban setting. This development branch attracts researchers since there are many available Open Source datasets aimed for autonomous driving in an urban setting (e.g. A2D2 \autocite{geyer2020a2d2audiautonomousdriving}, Udacity Self Driving Car Dataset). Other researches set their goal to train the model to autonomously drive in a proprietary setting (e.g. aggressive driving using custom vehicles \autocite{drews2017aggressivedeepdrivingmodel}). Such researches are usually harder to make, since the task of collecting and labeling the data lies on the researchers.
+
 \section{Goals of the thesis}
 
-\section{Structure of the thesis}
+Since the thesis mostly focuses Behavioral Cloning, it tries to address the main weakness of this approach: maximize the model's generalization ability \autocite{ARGALL2009469}. Since it's learning from demonstration, the model learns a way to solve a problem and doesn't reinvent it from scratch, as in unsupervised machine learning approaches. This makes the learned behavior prone to undemonstrated states that didn't occur in training. And since the agent operates on it's own during tests, every it's decision potentially leads to an undemonstrated state. Based on this, it makes it very important to mainly focus on generalization of the model during training.
 
 To assess the generalization abilities of the model the 2 levels of difficulties for the agent are introduced:
 \begin{enumerate}
@@ -13,5 +15,7 @@ To assess the generalization abilities of the model the 2 levels of difficulties
   \item \textbf{Second level of difficulty:} In this setting the positions of both the robot and the obstacles will vary in a random fashion. On this level the generalization abilities of the model will be tested. Since each drive is performed differently and not in a way in which the model was trained, this difficulty level challenges the model's ability to spot and analyze more general features and not just to rely on memorization.
 \end{enumerate}
 
-The research is aimed to put clearness in the following questions: (1) Can the model be trained using Behavioral Cloning \autocite{8855753} to demonstrate human performance or even surpass it in the first difficulty? (2) Can the model be sufficiently generalized using behavioral cloning to demonstrate human performance or even surpass it in the second difficulty? (3) Can the Inverse Reinforcement Learning (IRL) \autocite{ng2000algorithms} \autocite{neu2012apprenticeshiplearningusinginverse} \autocites{lee2021approximateinversereinforcementlearning} approach eliminate the expected weaknesses of the Behavioral Cloning approach in mastering the course on both difficulty levels and contribute to successfully mastering the course? \\
-The last question will be answered with a help of literature, since there is no possibility to implement IRL algorithms in current settings.
+The research is aimed to put clearness in the following questions: (1) Can the model be trained using Behavioral Cloning \autocite{5152385} to demonstrate human performance or even surpass it in the first difficulty? (2) Can the model be sufficiently generalized using behavioral cloning to demonstrate human performance or even surpass it in the second difficulty? (3) Can the Inverse Reinforcement Learning (IRL) \autocite{ng2000algorithms} \autocite{neu2012apprenticeshiplearningusinginverse} \autocites{lee2021approximateinversereinforcementlearning} approach eliminate the expected weaknesses of the Behavioral Cloning approach in mastering the course on both difficulty levels and contribute to successfully mastering the course? \\
+The last question will be answered with a help of literature, since there is no possibility to implement IRL algorithms in the given circumstances circumstances.
+
+\section{Structure of the thesis}
