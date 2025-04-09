@@ -1,5 +1,11 @@
 # TODO
 
+Train new model with:
+(choose which model to use from one of the bottom ones)
+
+1. Image normalization according to the statistic in training data
+2. More augmentation (x5)
+
 Test these:
 
 - https://huggingface.co/datasets/ayarotskyi/bachelor_thesis/tree/main/models/BSNetLSTM/reduced_dimensions (a9d95660104622e08ef5cb2b6b8dc287f6dbc5c9)
