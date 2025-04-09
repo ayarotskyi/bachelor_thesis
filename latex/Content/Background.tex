@@ -1,0 +1,41 @@
+\chapter{Background}
+\label{cha:Background}
+
+\section{Deep learning}
+
+\begin{definition}
+  An \textit{Artificial Neural Network} \autocite{oshea2015introductionconvolutionalneuralnetworks} \autocite{sharma2017activation} is a network of connected artificial neurons designed to mimic and repeat many of the properties of a real biological neural system. In the case of Feed-forward Neural Networks (FNNs) neurons are collected into layers where there are directed connections between each neuron in one layer to every neuron in the next layer. There are other examples of grouping and connecting neurons, e.g. Restricted Boltzmann Machines (RBMs) and Recurrent Neural Networks (RNNs). All the connections between neurons have a weight corresponding to the connection. Each neuron has it's own bias, which is updated during the training and is used to compute it's output. The output of a neuron is calculated using the input values, weights of all the incoming connections, it's own bias and activation function.
+\end{definition}
+
+\begin{definition}
+  An \textit{Activation Function} \autocite{sharma2017activation} is a function that computes the output of every neuron based on it's inputs, weights and bias. To characterize the activation functions there exist 2 main mathematical properties:
+  \begin{enumerate}
+    \item \textbf{Nonlinearity} \autocite{augustine2024surveyuniversalapproximationtheorems}: to conform to the Universal Approximation Theorem and add nonlinearity to the algorithm, activation function should be nonlinear, but there are many cases where linear function is used, e.g. in output layers of the NN for regression problems.
+    \item \textbf{Differentiability} \autocite{sharma2017activation}: a function that is differential throughout it's whole domain should be used to then be able to compute errors and losses using weights and consequently optimize weights using Gradient Descent or other optimization techniques. It is also possible to use functions that are not continuously differentiable, like ReLU. Actually, ReLU activation is very widely used, especially combined with convolutional layers, due to it's empirically proven efficiency.
+  \end{enumerate}
+\end{definition}
+
+\begin{definition}
+  \textit{Deep supervised learning} \autocite{alzubaidi2021review} \autocite{cun2015deeplearning} \autocite{oshea2015introductionconvolutionalneuralnetworks} is a technique of machine learning using labeled data. Considering that the training is done on a dataset \(D_t\), where \((x_t, y_t) \in D_t\) with \(x_t\) representing input datapoint and \(y_t\) representing output datapoint. Given that function \(f\) maps given input to the corresponding output of an ANN, the loss value is obtained using loss function \(\gamma\):  \(\gamma(y_t, f(x_t))\). Using Gradient Descent and other optimization techniques, parameters of the network (weights and biases) are repeatedly updated according to the loss value to reach the most precise and optimal estimation of the function.
+\end{definition}
+
+\section{Convolutional Neural Networks}
+
+Convolutional Neural Networks (CNNs) are one of the most commonly used tools for solving problems related to Computer Vision. They are widely used for classification, dimensionality reduction and other operations on high dimensional data. The ability to cost-efficiently store and derive features from image data without needing to store enormous amounts of weights is what makes them one of the most effective instruments for analyzing multidimensional data. Although CNNs are mostly used to process 2-dimensional data, they could also be used to word with 1D or 3D data in such tasks as sequence prediction or classification.
+
+\begin{definition}
+  A \textit{kernel} \autocite{alzubaidi2021review} is a grid of weights of a certain size and dimensionality (depends on the dimensionality of the CNN). It is used in convolutional layers when performing convolutional operation.
+\end{definition}
+
+% TODO: finish
+\begin{definition}
+  A \textit{convolutional operation} \autocite{alzubaidi2021review}
+\end{definition}
+
+\begin{definition}
+  A \textit{Convolutional Neural Network} \autocite{oshea2015introductionconvolutionalneuralnetworks} \autocite{jmse9040397} \autocite{LIU201711} is a discriminative deep learning model, which architecture is inspired by the organization of animal visual cortex. The main building blocks of every CNN are convolutional and sub-sampling/pooling layers. \\
+  \textbf{Convolutional layers} consist of multiple kernels/filters, each of which has it's own set of weights and produces it's output by sliding through the input matrix and performing convolutional operation. Convolutional layers are used to extract features and figure positional relations between them. \\
+  \textbf{Sub-sampling layers}
+\end{definition}
+
+The concept of CNNs was inspired by Time-Delay Neural Networks, where weights are shared through time dimension. In CNNs weights are compacted into it's kernels. This architectural property vastly reduces the number of parameters and complexity of the network compared to Fully Connected Networks. CNNs are valued for their ability to learn to identify features without human interaction and for their empirically proven performance in processing multidimensional data with grid-like topology, like images and videos.
