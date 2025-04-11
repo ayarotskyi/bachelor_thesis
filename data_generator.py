@@ -9,6 +9,13 @@ from agent.utils import calculate_motor_speeds
 
 def apply_augmentations(image):
     if random.randint(0, 100) > 50:
+        max_sigma = 0.5
+        sigma = np.random.uniform(0, max_sigma)
+        noise = np.random.normal(0, sigma, image.shape).astype(np.float64)
+        image = cv2.add(image, noise)
+        image = np.clip(image, -1, 1)  # Ensure pixel values stay in valid range
+
+    if random.randint(0, 100) > 50:
         max_shift = 9
         dx = np.random.randint(-max_shift, max_shift)
         dy = np.random.randint(-max_shift, max_shift)
@@ -23,13 +30,6 @@ def apply_augmentations(image):
         h, w = image.shape[:2]
         M = cv2.getRotationMatrix2D((w // 2, h // 2), angle, scale_factor)
         image = cv2.warpAffine(image, M, (w, h))
-
-    if random.randint(0, 100) > 50:
-        max_sigma = 0.1
-        sigma = np.random.uniform(0, max_sigma)
-        noise = np.random.normal(0, sigma, image.shape).astype(np.float64)
-        image = cv2.add(image, noise)
-        image = np.clip(image, -1, 1)  # Ensure pixel values stay in valid range
 
     return image
 
