@@ -13,6 +13,7 @@ Test these:
 - https://huggingface.co/datasets/ayarotskyi/bachelor_thesis/tree/main/models/BSNetLSTM/raw_input/speed_prediction (b0b0a98a1dabcdfed6926e8787cb23ce70398253)
 - https://huggingface.co/datasets/ayarotskyi/bachelor_thesis/tree/main/models/BSNetLSTM/reduced_dimensions/speed_prediction (3ad2573f3047d7260fa750802d1c7df6b23ec9ba)
 - https://huggingface.co/datasets/ayarotskyi/bachelor_thesis/tree/main/models/BSNetLSTM/reduced_dimensions/speed_prediction/without_restoring_best_weights
+- https://huggingface.co/datasets/ayarotskyi/bachelor_thesis/tree/main/models/BSNetLSTM/reduced_dimensions/speed_prediction/std_normalization (a2a8f4b26f7e0393fd91d493fb6add9f7cb8ad81)
 
 # Environment setup:
 
