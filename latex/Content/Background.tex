@@ -4,19 +4,25 @@
 \section{Deep learning}
 
 \begin{definition}
-  An \textit{Artificial Neural Network} \autocite{oshea2015introductionconvolutionalneuralnetworks} \autocite{sharma2017activation} is a network of connected artificial neurons designed to mimic and repeat many of the properties of a real biological neural system. In the case of Feed-forward Neural Networks (FNNs) neurons are collected into layers where there are directed connections between each neuron in one layer to every neuron in the next layer. There are other examples of grouping and connecting neurons, e.g. Restricted Boltzmann Machines (RBMs) and Recurrent Neural Networks (RNNs). All the connections between neurons have a weight corresponding to the connection. Each neuron has it's own bias, which is updated during the training and is used to compute it's output. The output of a neuron is calculated using the input values, weights of all the incoming connections, it's own bias and activation function.
+  An \textit{Artificial Neural Network (ANN)} \autocite{oshea2015introductionconvolutionalneuralnetworks} \autocite{sharma2017activation} is a computational model inspired by the structure and function of biological neural networks. It consists of interconnected artificial neurons (or nodes), which collectively process input data and learn patterns through training.
+
+  In the case of Feedforward Neural Networks (FNNs), neurons are organized into layers, with each neuron in one layer connected to every neuron in the subsequent layer via directed connections. These connections are associated with trainable parameters called weights. Other neural architectures, such as Restricted Boltzmann Machines (RBMs) and Recurrent Neural Networks (RNNs), use different strategies for grouping and connecting neurons to capture specific data structures or temporal dependencies.
+
+  Each neuron in the network also possesses a bias term—another learnable parameter—used to adjust the activation threshold. The output of a neuron is computed as a function of the weighted sum of its inputs and its bias, passed through a non-linear activation function. During training, both weights and biases are updated to minimize the network’s prediction error and improve its performance.
 \end{definition}
 
 \begin{definition}
-  An \textit{Activation Function} \autocite{sharma2017activation} is a function that computes the output of every neuron based on it's inputs, weights and bias. To characterize the activation functions there exist 2 main mathematical properties:
-  \begin{enumerate}
-    \item \textbf{Nonlinearity} \autocite{augustine2024surveyuniversalapproximationtheorems}: to conform to the Universal Approximation Theorem and add nonlinearity to the algorithm, activation function should be nonlinear, but there are many cases where linear function is used, e.g. in output layers of the NN for regression problems.
-    \item \textbf{Differentiability} \autocite{sharma2017activation}: a function that is differential throughout it's whole domain should be used to then be able to compute errors and losses using weights and consequently optimize weights using Gradient Descent or other optimization techniques. It is also possible to use functions that are not continuously differentiable, like ReLU. Actually, ReLU activation is very widely used, especially combined with convolutional layers, due to it's empirically proven efficiency.
-  \end{enumerate}
+  An \textit{Activation Function} \autocite{sharma2017activation} is a mathematical function used in artificial neural networks to determine the output of a neuron based on its input, associated weights, and bias. Given a neuron with inputs \(x\), weights \(w\), and bias \(b\), the neuron computes a linear combination \(z = w^\top x + b\). The activation function is then applied to this linear output, producing the final output of the neuron. Activation functions introduce non-linearity into the network, enabling it to learn complex patterns and approximate arbitrary functions. Common activation functions include the Sigmoid, Hyperbolic Tangent (Tanh), and Rectified Linear Unit (ReLU).
 \end{definition}
 
+An activation function is typically expected to exhibit two key mathematical properties:
+\begin{enumerate}
+  \item \textbf{Nonlinearity} \autocite{augustine2024surveyuniversalapproximationtheorems}: To satisfy the conditions of the Universal Approximation Theorem and enable the network to model complex, non-linear relationships, activation functions must introduce nonlinearity into the system. Using a nonlinear activation function in hidden layers is essential for learning intricate patterns in the data, but linear functions are also sometimes used, e.g. in the output layer of neural networks.
+  \item \textbf{Differentiability} \autocite{sharma2017activation}: The activation function should ideally be differentiable across its entire domain to allow the computation of gradients during backpropagation. This is necessary for calculating loss gradients with respect to the network’s weights, enabling optimization techniques like Gradient Descent. However, it is not strictly necessary for the function to be continuously differentiable. For instance, the Rectified Linear Unit (ReLU) is not differentiable at zero, yet it is widely used—particularly in combination with convolutional layers—due to its empirical effectiveness and computational efficiency.
+\end{enumerate}
+
 \begin{definition}
-  \textit{Deep supervised learning} \autocite{alzubaidi2021review} \autocite{cun2015deeplearning} \autocite{oshea2015introductionconvolutionalneuralnetworks} is a technique of machine learning using labeled data. Considering that the training is done on a dataset \(D_t\), where \((x_t, y_t) \in D_t\) with \(x_t\) representing input datapoint and \(y_t\) representing output datapoint. Given that function \(f\) maps given input to the corresponding output of an ANN, the loss value is obtained using loss function \(\gamma\):  \(\gamma(y_t, f(x_t))\). Using Gradient Descent and other optimization techniques, parameters of the network (weights and biases) are repeatedly updated according to the loss value to reach the most precise and optimal estimation of the function.
+  \textit{Deep supervised learning} \autocite{alzubaidi2021review} \autocite{cun2015deeplearning} \autocite{oshea2015introductionconvolutionalneuralnetworks} is a machine learning approach that relies on labeled data to train deep neural networks. Let \(D_t\), denote the training dataset, where each example \((x_t, y_t) \in D_t\) consists of an input datapoint \(x_t\) and its corresponding output label \(y_t\). A function \(f\), typically represented by an artificial neural network (ANN), is learned to map inputs to outputs. The discrepancy between the predicted output \(f(x_t)\) and the true output \(y_t\) is quantified using a loss function \(\gamma\), yielding a loss value \(\gamma(y_t, f(x_t))\). Optimization techniques such as Gradient Descent are then used to iteratively update the network’s parameters in order to minimize the loss, thereby improving the model’s accuracy in approximating the target function.
 \end{definition}
 
 \section{Convolutional Neural Networks}
@@ -27,9 +33,8 @@ Convolutional Neural Networks (CNNs) are one of the most commonly used tools for
   A \textit{kernel} \autocite{alzubaidi2021review} is a grid of weights of a certain size and dimensionality (depends on the dimensionality of the CNN). It is used in convolutional layers when performing convolutional operation.
 \end{definition}
 
-% TODO: finish
 \begin{definition}
-  A \textit{convolutional operation} \autocite{alzubaidi2021review}
+  A \textit{convolutional operation} \autocite{alzubaidi2021review} is a process in which a kernel slides through the input image horizontally and vertically and dot product between kernel and input is calculated for each sliding point. The sliding and calculation of the dot product between matrices is performed until no further sliding is not possible. The sliding can be performed by visiting every pixel in each direction, but kernel can also slide skipping one or multiple pixels, depending on the stride size of the layer. The grid of scalar values that appear after performing convolutional operation is usually called a feature map.
 \end{definition}
 
 \begin{definition}
