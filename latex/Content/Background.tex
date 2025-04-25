@@ -18,7 +18,7 @@
 An activation function is typically expected to exhibit two key mathematical properties:
 \begin{enumerate}
   \item \textbf{Nonlinearity} \autocite{augustine2024surveyuniversalapproximationtheorems}: To satisfy the conditions of the Universal Approximation Theorem and enable the network to model complex, non-linear relationships, activation functions must introduce nonlinearity into the system. Using a nonlinear activation function in hidden layers is essential for learning intricate patterns in the data, but linear functions are also sometimes used, e.g. in the output layer of neural networks.
-  \item \textbf{Differentiability} \autocite{sharma2017activation}: The activation function should ideally be differentiable across its entire domain to allow the computation of gradients during backpropagation. This is necessary for calculating loss gradients with respect to the network’s weights, enabling optimization techniques like Gradient Descent. However, it is not strictly necessary for the function to be continuously differentiable. For instance, the Rectified Linear Unit (ReLU) is not differentiable at zero, yet it is widely used—particularly in combination with convolutional layers—due to its empirical effectiveness and computational efficiency.
+  \item \textbf{Differentiability} \autocite{sharma2017activation}: The activation function should ideally be differentiable across its entire domain to allow the computation of gradients during backpropagation. This is necessary for calculating loss gradients with respect to the network’s weights, enabling optimization techniques like Gradient Descent. However, it is not strictly necessary for the function to be continuously differentiable. For instance, the Rectified Linear Unit (ReLU) is not differentiable at zero, yet it is widely used—particularly in combination with convolutional layers—due to its empirical effectiveness and computational efficiency \autocite{alzubaidi2021review}.
 \end{enumerate}
 
 \begin{definition}
@@ -57,3 +57,32 @@ Convolutional Neural Networks (CNNs) are among the most widely used and powerful
 \end{definition}
 
 The concept of CNNs was inspired by Time-Delay Neural Networks, where weights are shared through time dimension. In CNNs weights are compacted into it's kernels. This architectural property vastly reduces the number of parameters and complexity of the network compared to Fully Connected Networks. CNNs are valued for their ability to learn to identify features without human interaction and for their empirically proven performance in processing multidimensional data with grid-like topology, like images and videos.
+
+\section{Regularization}
+
+\begin{definition}
+  \textbf{Overfitting} \autocite{oshea2015introductionconvolutionalneuralnetworks} occurs when a model learns the details and noise in the training data to the extent that it negatively impacts the model’s performance on new, unseen data. This results in a model that has high accuracy on the training set but poor generalization to test data. Usually overfitting is indicated by model's performance on training dataset being much better then on test dataset \autocite{9944190}.
+\end{definition}
+
+Convolutional Neural Networks, despite their powerful feature extraction capabilities, are highly prone to overfitting (especially when trained on limited or imbalanced datasets) \autocite{alzubaidi2021review}. This is largely due to their large number of learnable parameters, which can easily adapt to noise in the training data. Regularization techniques are therefore essential to improve generalization and ensure that the model performs well on unseen data. Common methods include dropout, weight decay (L2 regularization), data augmentation, and early stopping. These techniques help constrain the learning process, reduce model complexity, and encourage the network to learn more robust and transferable features.
+
+\begin{itemize}
+  \item \textbf{Dropout:} \autocite{10.5555/2627435.2670313} A regularization technique where neurons are randomly deactivated during each training iteration. This prevents co-adaptation of neurons, encourages redundancy in feature learning, and improves generalization. During inference, the full network is used without dropout.
+
+  \item \textbf{Data Augmentation:} \autocite{10.1145/3510413} Increases the size and diversity of the training dataset by applying transformations such as rotation, scaling, or flipping. This helps prevent overfitting and improves the model's ability to generalize.
+
+  \item \textbf{Batch Normalization:} \autocite{NEURIPS2018_36072923} \autocite{10.1145/3510413} Normalizes layer outputs to have zero mean and unit variance. It reduces internal covariate shift, stabilizes training, and speeds up convergence by maintaining consistent activation distributions across training epochs. This normalization is applied to mini-batches during training and is often followed by a learnable scaling and shifting operation. By mitigating the shifting distributions of intermediate activations, batch normalization allows for higher learning rates, reduces sensitivity to initialization, and can also act as a form of regularization, sometimes reducing the need for dropout.
+
+  \item \textbf{L1 and L2 Regularization:} \autocite{kukačka2017regularizationdeeplearningtaxonomy} These techniques add a penalty term to the loss function to discourage large weights and reduce the complexity of the model. L1 regularization (lasso) promotes sparsity by adding the absolute values of weights, and is represented by the term:
+    \[
+      \mathcal{L}_{L1} = \lambda \sum_{i} |w_i|
+    \]
+    where \( \lambda \) is the regularization strength and \( w_i \) are the model weights. L2 regularization (ridge) penalizes the squared values of weights, leading to smaller but non-zero weights, and is given by:
+    \[
+      \mathcal{L}_{L2} = \lambda \sum_{i} w_i^2
+    \]
+    The total loss function typically combines both the original loss and the regularization terms:
+    \[
+      \mathcal{L}_{total} = \mathcal{L}_{data} + \mathcal{L}_{L1} \text{ or } \mathcal{L}_{L2}
+    \]
+\end{itemize}
