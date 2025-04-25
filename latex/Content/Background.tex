@@ -27,20 +27,33 @@ An activation function is typically expected to exhibit two key mathematical pro
 
 \section{Convolutional Neural Networks}
 
-Convolutional Neural Networks (CNNs) are one of the most commonly used tools for solving problems related to Computer Vision. They are widely used for classification, dimensionality reduction and other operations on high dimensional data. The ability to cost-efficiently store and derive features from image data without needing to store enormous amounts of weights is what makes them one of the most effective instruments for analyzing multidimensional data. Although CNNs are mostly used to process 2-dimensional data, they could also be used to word with 1D or 3D data in such tasks as sequence prediction or classification.
+Convolutional Neural Networks (CNNs) are among the most widely used and powerful tools in the field of Computer Vision. They excel at tasks such as image classification, dimensionality reduction, and other operations involving high-dimensional data. One of their key advantages is the ability to efficiently extract meaningful features from images without the need to store vast numbers of parameters, making them highly effective for analyzing complex, multidimensional data. While CNNs are primarily designed for processing two-dimensional inputs, they can also be adapted for one-dimensional \autocite{8126078} or three-dimensional \autocite{9786658} data, enabling their use in applications like sequence prediction and volumetric data classification.
 
 \begin{definition}
-  A \textit{kernel} \autocite{alzubaidi2021review} is a grid of weights of a certain size and dimensionality (depends on the dimensionality of the CNN). It is used in convolutional layers when performing convolutional operation.
+  A \textit{kernel} \autocite{alzubaidi2021review}, also known as filter, is a small matrix of learnable weights $K \in \mathbb{R}^{m \times n}$ (or a higher-dimensional tensor, depending on the input) used in the convolutional and pooling layers of a Convolutional Neural Network (CNN). In convolutional layers it performs the convolution operation by sliding across the input $X$, computing a dot product at each position:
+  \[(X * K)(i, j) = \sum_{u=0}^{m-1} \sum_{v=0}^{n-1} X(i+u, j+v) \cdot K(u, v) \]
+  This operation produces a feature map that highlights spatial patterns such as edges or textures. The kernel weights are optimized during training.
 \end{definition}
 
 \begin{definition}
-  A \textit{convolutional operation} \autocite{alzubaidi2021review} is a process in which a kernel slides through the input image horizontally and vertically and dot product between kernel and input is calculated for each sliding point. The sliding and calculation of the dot product between matrices is performed until no further sliding is not possible. The sliding can be performed by visiting every pixel in each direction, but kernel can also slide skipping one or multiple pixels, depending on the stride size of the layer. The grid of scalar values that appear after performing convolutional operation is usually called a feature map.
+  A \textit{convolutional operation} \autocite{alzubaidi2021review} is a process in which a kernel slides through the input image horizontally and vertically and dot product between kernel and input is calculated for each sliding point. The sliding and calculation of the dot product between matrices is performed until no further sliding is possible. The sliding can be performed by visiting every pixel in each direction, but kernel can also slide skipping one or multiple pixels, depending on the stride size of the layer. The grid of scalar values that appear after performing convolutional operation is usually called a feature map. An example of convolutional operation is shown in figure \ref{fig:convolution-diagram}.
 \end{definition}
 
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\textwidth]{Images/convolutional_operation.png}
+  \caption{Illustration of the convolutional operation using a kernel on 2D input data.}
+  \label{fig:convolution-diagram}
+\end{figure}
+
 \begin{definition}
-  A \textit{Convolutional Neural Network} \autocite{oshea2015introductionconvolutionalneuralnetworks} \autocite{jmse9040397} \autocite{LIU201711} is a discriminative deep learning model, which architecture is inspired by the organization of animal visual cortex. The main building blocks of every CNN are convolutional and sub-sampling/pooling layers. \\
-  \textbf{Convolutional layers} consist of multiple kernels/filters, each of which has it's own set of weights and produces it's output by sliding through the input matrix and performing convolutional operation. Convolutional layers are used to extract features and figure positional relations between them. \\
-  \textbf{Sub-sampling layers}
+  A \textit{Convolutional Neural Network (CNN)} \autocite{oshea2015introductionconvolutionalneuralnetworks} \autocite{jmse9040397} \autocite{LIU201711} is a discriminative deep learning model whose architecture is inspired by the hierarchical organization of the visual cortex in animals. CNNs are particularly effective in tasks involving image and spatial data processing due to their ability to capture local patterns and spatial hierarchies.
+
+  The core components of a CNN are \textbf{convolutional layers} and \textbf{sub-sampling (pooling) layers}.
+
+  \textbf{Convolutional layers} apply a set of learnable kernels (filters), each with its own weights, which slide over the input matrix to perform convolution operations. These layers extract local features by emphasizing patterns such as edges, textures, or more complex structures as the network deepens. They also preserve the spatial relationship between features, allowing the network to learn spatial hierarchies.
+
+  \textbf{Sub-sampling layers}, also known as pooling layers, are used to progressively reduce the spatial dimensions of the feature maps. This helps decrease the computational complexity, control overfitting, and enhance the model’s invariance to small translations in the input. Common pooling operations include max pooling and average pooling, where the most prominent or average feature within a local region is retained. It's generally advised to use kernel size of 3 or less in pooling layers, due to their destructive nature and high chance of losing meaningful features.
 \end{definition}
 
 The concept of CNNs was inspired by Time-Delay Neural Networks, where weights are shared through time dimension. In CNNs weights are compacted into it's kernels. This architectural property vastly reduces the number of parameters and complexity of the network compared to Fully Connected Networks. CNNs are valued for their ability to learn to identify features without human interaction and for their empirically proven performance in processing multidimensional data with grid-like topology, like images and videos.
