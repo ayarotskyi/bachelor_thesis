@@ -25,14 +25,7 @@ class MemoryStack:
         image = cv2.resize(
             cv2.cvtColor(image, cv2.COLOR_BGR2GRAY), (target_size, target_size)
         )[int(target_size / 2) :, :]
-        blurred = cv2.GaussianBlur(image, (15, 15), 10)
-        sobel_x = cv2.Sobel(blurred, cv2.CV_64F, 1, 0, ksize=5)
-        sobel_y = cv2.Sobel(blurred, cv2.CV_64F, 0, 1, ksize=5)
-        sobel_combined = cv2.magnitude(sobel_x, sobel_y)
-        sobel_normalized = cv2.normalize(
-            sobel_combined, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U
-        )
-        return (sobel_normalized - 54.15) / 55.98
+        return (image - 141.07) / 46.39
 
 
 class MemoryStackDAVE2(MemoryStack):
