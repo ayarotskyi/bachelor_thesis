@@ -111,9 +111,6 @@ def get_dataset_pair(
             ]
         current_index += 1
 
-    left_speed, right_speed = calculate_motor_speeds(label[0], label[1])
-    label = [left_speed, right_speed]
-
     return (
         image_memory_stack,
         label,
