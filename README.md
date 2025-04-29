@@ -10,6 +10,11 @@ Train raw input model using:
 - whole dataset
 - transfer learning on second difficulty
 
+Test these models:
+
+- https://huggingface.co/datasets/ayarotskyi/bachelor_thesis/tree/main/models/BSNetLSTM/raw_input/std_norm
+- https://huggingface.co/datasets/ayarotskyi/bachelor_thesis/tree/main/models/BSNetLSTM/raw_input/transfer_learning (image / 127.5 - 1)
+
 # Environment setup:
 
 - MacOS:
