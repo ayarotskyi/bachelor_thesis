@@ -86,3 +86,31 @@ Convolutional Neural Networks, despite their powerful feature extraction capabil
       \mathcal{L}_{total} = \mathcal{L}_{data} + \mathcal{L}_{L1} \text{ or } \mathcal{L}_{L2}
     \]
 \end{itemize}
+
+\section{Optimization}
+
+\begin{definition}
+  \textit{Gradient Descent} \autocite{sun2020optimization} \autocite{ruder2017overviewgradientdescentoptimization} is an iterative optimization algorithm used to minimize a loss function \( F(\theta) \) by updating the model parameters \( \theta \) in the direction of the negative gradient of the function. The basic update rule for gradient descent is given by
+  \[
+    \theta_{t+1} = \theta_t - \eta_t \nabla F(\theta_t),
+  \]
+  where \( \eta_t \) is the step size (also known as the learning rate), and \( \nabla F(\theta_t) \) is the gradient of the loss function evaluated at iteration \( t \).
+\end{definition}
+
+There are 3 variants \autocite{ruder2017overviewgradientdescentoptimization} of Gradient Descent: Batch Gradient Descent, Stochastic Gradient Descent and Mini-Batch Gradient Descent. Batch Gradient Descent Computes gradient for the whole dataset and performs the parameter update only afterwards.
+% TODO: continue with other variants
+
+\begin{definition}
+  \textit{Backpropagation} \autocite{sun2020optimization} is an efficient algorithm for computing the gradient of the loss function with respect to the parameters of a neural network. Backpropagation systematically applies the chain rule of calculus layer by layer, propagating gradients backward from the output to the input to compute \( \nabla_\theta F_0(\theta) \) efficiently. From an optimization perspective, it enables the application of gradient-based methods, such as gradient descent, to train multi-layer networks.
+\end{definition}
+
+\begin{definition}
+  \textit{Gradient Explosion/Vanishing} \autocite{sun2020optimization} refers to a common difficulty encountered when training deep neural networks, where gradients become either excessively large or exceedingly small as they are propagated backward through the network during training. From a signal processing perspective, gradient descent acts as a feedback correction mechanism: errors computed at the output layer are backpropagated through the network to update the weights of earlier layers. As this error signal passes through many layers, it may be repeatedly amplified (leading to gradient explosion) or attenuated (resulting in gradient vanishing). In either case, the learning process becomes unstable or stalls, preventing effective weight updates and model convergence.
+\end{definition}
+
+\begin{definition}
+  \textit{Convergence} \autocite{sun2020optimization} in the context of optimization algorithms, particularly gradient descent, typically refers to the behavior where the sequence of iterates $\{\theta_t\}$ approaches a limit point as $t \rightarrow \infty$. A common formal criterion is that every limit point is a stationary point \autocite{bertsekas1997nonlinear}, meaning that the gradient vanishes at those points: $\nabla F(\theta^*) = 0$. However, this does not guarantee convergence to a global minimum and allows for several undesirable outcomes, such as the sequence having multiple limit points, or the sequence diverging with no limit points.
+\end{definition}
+\subsection{Optimization algorithms}
+\subsection{Weights initialization}
+% TODO: finish these sections
