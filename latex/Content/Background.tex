@@ -178,5 +178,16 @@ There are 3 variants of Gradient Descent: \autocite{ruder2017overviewgradientdes
     The authors of adam note that it's update rule scales the gradient inversely proportional to a $L^2$ norm of their current and past gradients. After generalizing the $L^2$ to $L^p$ and letting $p \rightarrow \infty$, they're able to replace the term $\sqrt{v_t} + \epsilon$ with $u_t = max(\beta_2 * u_{t - 1}, |g_t|)$, thus receiving:
     \[ \theta_{t+1} = \theta_t - \frac{\eta}{u_t} m_t, \]
 \end{itemize}
-\subsection{Weights initialization}
-% TODO: finish these sections
+\subsection{Weights Initialization}
+There are many weight initialization regions that will inevitably lead to exploding/vanishing gradient and thus there is it is sometimes very important to initialize weights in a certain way. \autocite{sun2020optimization}
+\begin{itemize}
+  \item \textbf{Naive Initialization} \\
+    A naive approach would be to try all-zero point or draw initialization values from a certain random distribution. Although, sometimes this approach works and produces good results, there is no guarantee that it will work for all problems with identical success.
+  \item \textbf{LeCun Initialization} \autocite{LeCun1998} \\
+    This initialization technique is aimed to preserve the variance of the activations during the forward pass. Each weight is sampled with $mean(W_{i,j}^l) = 0$ and $var(W_{i,j}^l) = \frac{1}{n_{l-1}}$, where $n_{l-1}$ is the number of neurons in the previous layer. This method was invented to achieve the best initialization for sigmoid activation function.
+  \item \textbf{Glorot Initialization} \autocite{glorot2010understanding} \\
+    In analogy, this technique was designed to preserve both activation variance during forward pass and gradient variance during backpropagation. In this approach the variance of the weight distribution is calculated by $var(W_{i,j}^l) = \frac{2}{n_{l-1} + n_{l}}$, where $n_{l-1}$ and $n_{l}$ are the numbers of neurons in the previous and current layers accordingly.
+  \item \textbf{He Initialization} \autocite{he2015delving} \\
+    After ReLU activation function became popular, it inspired the finding of a better initialization method that would fit this new function. The intuition for this initialization method is that for a symmetric random variable $\psi$, $ E[ReLU(\psi)] = E[max(0, \psi)] = \frac{1}{2} E[\psi] $. Thus, the mean is cut in half by the ReLU function. So in He initialization method the variance of the weight distribution is defined as follows: $var(W_{j,i}^l) = \frac{2}{d_{l-1}}$ or $var(W_{j,i}^l) = \frac{2}{d_l}$.
+\end{itemize}
+% TODO: finish other initializations
