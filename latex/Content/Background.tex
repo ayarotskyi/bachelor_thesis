@@ -92,16 +92,59 @@ Convolutional Neural Networks, despite their powerful feature extraction capabil
 \begin{definition}
   \textit{Gradient Descent} \autocite{sun2020optimization} \autocite{ruder2017overviewgradientdescentoptimization} is an iterative optimization algorithm used to minimize a loss function \( F(\theta) \) by updating the model parameters \( \theta \) in the direction of the negative gradient of the function. The basic update rule for gradient descent is given by
   \[
-    \theta_{t+1} = \theta_t - \eta_t \nabla F(\theta_t),
+    \theta = \theta - \eta \nabla_\theta F(\theta),
   \]
-  where \( \eta_t \) is the step size (also known as the learning rate), and \( \nabla F(\theta_t) \) is the gradient of the loss function evaluated at iteration \( t \).
+  where \( \eta \) is the step size (also known as the learning rate), and \( \nabla_\theta F(\theta) \) is the gradient of the loss function.
 \end{definition}
 
-There are 3 variants \autocite{ruder2017overviewgradientdescentoptimization} of Gradient Descent: Batch Gradient Descent, Stochastic Gradient Descent and Mini-Batch Gradient Descent. Batch Gradient Descent Computes gradient for the whole dataset and performs the parameter update only afterwards.
-% TODO: continue with other variants
+There are 3 variants of Gradient Descent: \autocite{ruder2017overviewgradientdescentoptimization}
+\begin{itemize}
+  \item \textit{Batch Gradient Descent} Computes gradient for the whole dataset and performs the parameter update only afterwards. Since the gradient is calculated only once per epoch, Batch Gradient Descent can be very slow and is not suitable for large datasets that don't fit into memory.
+    \begin{algorithm}
+      \caption{Gradient Descent}
+      \begin{algorithmic}[1]
+        \Require Number of epochs $N$, learning rate $\eta$, initial parameters $\theta$, loss function $L$, dataset $D$
+        \Ensure Updated parameters $\theta$
+        \For{$i = 1$ \textbf{to} $N$}
+        \State $g \gets \text{evaluate\_gradient}(L, D, \theta)$
+        \State $\theta \gets \theta - \eta \cdot g$
+        \EndFor
+      \end{algorithmic}
+    \end{algorithm}
+  \item \textit{Stochastic Gradient Descent (SGD)} calculates gradient and performs parameter update for each datapoint in the dataset. SGD is usually much faster and can be used in an online learning. But performing frequent updates with high variance usually leads to fluctuations in the objective function. These fluctuations usually help SGD find potentially more effective local minima in comparison to Batch Gradient Descent.
+    \begin{algorithm}
+      \caption{Stochastic Gradient Descent (SGD)}
+      \begin{algorithmic}[1]
+        \Require Number of epochs $N$, learning rate $\eta$, dataset $D$, initial parameters $\theta$, loss function $L$
+        \Ensure Updated parameters $\theta$
+        \For{$i = 1$ \textbf{to} $N$}
+        \State Shuffle dataset $D$
+        \ForAll{example $x$ in $D$}
+        \State $g \gets \text{evaluate\_gradient}(L, x, \theta)$
+        \State $\theta \gets \theta - \eta \cdot g$
+        \EndFor
+        \EndFor
+      \end{algorithmic}
+    \end{algorithm}
+  \item \textit{Mini-Batch Gradient Descent} splits the data into mini-batches and calculates the gradient and updates the parameters for each batch separately. This way, it is able to reduce variance of parameter updates and take advantage of fast matrix operations that can be performed for the whole mini-batch at a time on modern Graphics Processing Units (GPUs).
+    \begin{algorithm}
+      \caption{Mini-Batch Gradient Descent}
+      \begin{algorithmic}[1]
+        \Require Number of epochs $N$, learning rate $\eta$, dataset $D$, batch size $b$, initial parameters $\theta$, loss function $L$
+        \Ensure Updated parameters $\theta$
+        \For{$i = 1$ \textbf{to} $N$}
+        \State Shuffle dataset $D$
+        \ForAll{batch $B$ in $\text{get\_batches}(D, b)$}
+        \State $g \gets \text{evaluate\_gradient}(L, B, \theta)$
+        \State $\theta \gets \theta - \eta \cdot g$
+        \EndFor
+        \EndFor
+      \end{algorithmic}
+    \end{algorithm}
+\end{itemize}
 
 \begin{definition}
-  \textit{Backpropagation} \autocite{sun2020optimization} is an efficient algorithm for computing the gradient of the loss function with respect to the parameters of a neural network. Backpropagation systematically applies the chain rule of calculus layer by layer, propagating gradients backward from the output to the input to compute \( \nabla_\theta F_0(\theta) \) efficiently. From an optimization perspective, it enables the application of gradient-based methods, such as gradient descent, to train multi-layer networks.
+  \textit{Backpropagation} \autocite{sun2020optimization} is an efficient algorithm for computing the gradient of the loss function with respect to the parameters of a neural network. Backpropagation systematically applies the chain rule of calculus layer by layer, propagating gradients backward from the output to the input to compute \( \nabla_\theta F(\theta) \) efficiently. From an optimization perspective, it enables the application of gradient-based methods, such as gradient descent, to train multi-layer networks.
 \end{definition}
 
 \begin{definition}
@@ -109,8 +152,31 @@ There are 3 variants \autocite{ruder2017overviewgradientdescentoptimization} of 
 \end{definition}
 
 \begin{definition}
-  \textit{Convergence} \autocite{sun2020optimization} in the context of optimization algorithms, particularly gradient descent, typically refers to the behavior where the sequence of iterates $\{\theta_t\}$ approaches a limit point as $t \rightarrow \infty$. A common formal criterion is that every limit point is a stationary point \autocite{bertsekas1997nonlinear}, meaning that the gradient vanishes at those points: $\nabla F(\theta^*) = 0$. However, this does not guarantee convergence to a global minimum and allows for several undesirable outcomes, such as the sequence having multiple limit points, or the sequence diverging with no limit points.
+  \textit{Convergence} \autocite{sun2020optimization} in the context of optimization algorithms, particularly gradient descent, typically refers to the behavior where the sequence of iterates $\{\theta_t\}$ approaches a limit point as $t \rightarrow \infty$. A common formal criterion is that every limit point is a stationary point \autocite{bertsekas1997nonlinear}, meaning that the gradient vanishes at those points: $\nabla_\theta F(\theta^*) = 0$. However, this does not guarantee convergence to a global minimum and allows for several undesirable outcomes, such as the sequence having multiple limit points, or the sequence diverging with no limit points.
 \end{definition}
+
 \subsection{Optimization algorithms}
+\begin{itemize}
+  \item \textbf{Momentum} \\
+    SGD struggles to find the right gradient direction when updates in one dimension are much steeper than in another \autocite{sutton1986two}. Momentum is a method that helps SGD overcome local minima faster and more effective. It works by updating the gradient vector $ v_t = \gamma v_{t-1} + \eta \nabla_\theta F(\theta) $ on each timestamp $t$ and updating the parameters using this vector $ \theta = \theta - v_t $. This ensures that the previous gradient directions are taken into account and helps the objective function accelerate in the right direction. The momentum term $\gamma$ is usually set to $0.9$ so that the momentum doesn't grow into infinity.
+  \item \textbf{Nesterov accelerated gradient (NAG)} \autocite{nesterov1983method} \\
+    The main problem with momentum is that it takes into account only previous vectors and doesn't react fast enough to the changes in the current and future gradient if the momentum is high enough. In NAG the next parameter update is approximated by subtracting the previous momentum. This way, the objective function slows down before the slopes and continues accelerating on the steep areas. The update vector for the current timestamp $t$ is calculated like this: $ v_t = \gamma v_{t-1} + \eta \nabla_\theta F(\theta - \gamma v_{t-1}) $.
+  \item \textbf{Adagrad} \autocite{duchi2011adaptive} \\
+    In this approach the learning rate is adapted for each parameter individually. Previously, the updates were performed for all parameters $\theta$ since each individual parameter $\theta_i$ used the same learning rate $\eta$. In Adagrad the gradient is calculated for each timestamp and for each parameter individually:
+    \[ g_{t,i} = \nabla_\theta F(\theta_{t,i}) \]
+    The update rule also changes. learning rate for each individual parameter now depends on the previous updates of this parameter:
+    \[ \theta_{t+1, i} = \theta_{t, i} - \frac{\eta}{\sqrt{G_{t, ii} + \epsilon}} g_{t,i}, \]
+    where $ G_t \in \mathbb{R}^{d \times d} $ is a diagonal matrix with each element $i, i$ being the sum of the squares of the gradients w.r.t. $ \theta_i $ up to timestamp $t$.
+  \item \textbf{Adadelta} \autocite{zeiler2012adadeltaadaptivelearningrate} \\
+    By accumulating the gradient updates, future learning rate eventually becomes very small in Adadelta. One way to eliminate this issue would be to take into account a fixed number of gradient updates for the diagonal matrix. In Adadelta the matrix $ G_t $ is replaced with the running average $E[g^2]_t = \gamma E[g^2]_{t-1} + (1 - \gamma)g_t^2$. Thus the formula for parameter update becomes:
+    \[ \theta_{t+1, i} = \theta_{t, i} - \frac{\eta}{\sqrt{E[g^2]_t + \epsilon}} g_{t,i}, \]
+  \item \textbf{Adam} \autocite{kingma2015adam} \\
+    This method computes adaptive learning rates, just as Adadelta. The difference is that it calculates the estimates of the mean $ m_t = \beta_1 m_t + (1 - \beta_1)g_t $ and the uncentered variance $ v_t = \beta_2 v_{t-1} + (1 - \beta_2)g_t^2 $ of the gradient to determine the learning rates of the parameters:
+    \[ \theta_{t+1} = \theta_t - \frac{\eta}{\sqrt{v_t} + \epsilon} m_t, \]
+    The best default values are $0.9$ for $\beta_1$, $0.999$ for $\beta_2$ and $10^{-8}$ for $\epsilon$. Adam is one of the most popular GD algorithms with empirically proven efficiency.
+  \item \textbf{Adamax} \autocite{kingma2015adam} \\
+    The authors of adam note that it's update rule scales the gradient inversely proportional to a $L^2$ norm of their current and past gradients. After generalizing the $L^2$ to $L^p$ and letting $p \rightarrow \infty$, they're able to replace the term $\sqrt{v_t} + \epsilon$ with $u_t = max(\beta_2 * u_{t - 1}, |g_t|)$, thus receiving:
+    \[ \theta_{t+1} = \theta_t - \frac{\eta}{u_t} m_t, \]
+\end{itemize}
 \subsection{Weights initialization}
 % TODO: finish these sections
