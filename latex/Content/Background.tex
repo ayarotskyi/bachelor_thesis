@@ -71,7 +71,7 @@ Convolutional Neural Networks, despite their powerful feature extraction capabil
 
   \item \textbf{Data Augmentation:} \autocite{10.1145/3510413} Increases the size and diversity of the training dataset by applying transformations such as rotation, scaling, or flipping. This helps prevent overfitting and improves the model's ability to generalize.
 
-  \item \textbf{Batch Normalization:} \autocite{NEURIPS2018_36072923} \autocite{10.1145/3510413} Normalizes layer outputs to have zero mean and unit variance. It reduces internal covariate shift, stabilizes training, and speeds up convergence by maintaining consistent activation distributions across training epochs. This normalization is applied to mini-batches during training and is often followed by a learnable scaling and shifting operation. By mitigating the shifting distributions of intermediate activations, batch normalization allows for higher learning rates, reduces sensitivity to initialization, and can also act as a form of regularization, sometimes reducing the need for dropout.
+  \item \textbf{Batch Normalization:} \autocite{NEURIPS2018_36072923} \autocite{10.1145/3510413} Normalizes layer outputs to have zero mean and unit variance. It reduces internal covariate shift, stabilizes training, and speeds up convergence by maintaining consistent activation distributions across training epochs. This normalization is applied to mini-batches during training and is often followed by a learnable scaling and shifting operation. By mitigating the shifting distributions of intermediate activations, Batch Normalization allows for higher learning rates, reduces sensitivity to initialization, and can also act as a form of regularization, sometimes reducing the need for dropout. The Batch Normalization layer and it's internal structure are described in depth in \autoref{subsec:normalization}.
 
   \item \textbf{L1 and L2 Regularization:} \autocite{kukačka2017regularizationdeeplearningtaxonomy} These techniques add a penalty term to the loss function to discourage large weights and reduce the complexity of the model. L1 regularization (lasso) promotes sparsity by adding the absolute values of weights, and is represented by the term:
     \[
@@ -194,6 +194,7 @@ There are many weight initialization regions that will inevitably lead to explod
 \end{itemize}
 
 \section{Normalization}
+\label{subsec:normalization}
 
 \begin{definition}
   \textit{Covariate shift} \autocite{ioffe2015batch} refers to a phenomenon in deep learning where the distribution of inputs to a layer in an Artificial Neural Network changes during training. Due to updates in the parameters in one of the layers of neural network, the distribution of it's outputs changes. As a result, the input distribution to the subsequent layers also shifts, which can render the features learned by those layers suboptimal or even ineffective. This leads to slower convergence and increased instability during training.
