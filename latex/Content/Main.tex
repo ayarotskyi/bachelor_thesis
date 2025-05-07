@@ -1,0 +1,43 @@
+\chapter{Model Training}
+\label{cha:Main}
+
+\section{Environment Setup}
+
+\subsection{Arena}
+
+The arena used in this thesis can be represented as a $(2 \times 1)m$ surface, on which the obstacles with dimensions $(4 \times 4 \times 16) cm$ are installed. The setup resembles the one used in the thesis of König \autocite{konig2022model} with the distinction that in the current thesis all the obstacles are of one color. To achieve preciseness in measurements, stability and robustness of the material, it was decided to use the 3D-printing technology for the obstacle creating. Such approach also ensures that the process of transferring the setup into the virtual reality goes smoothly, in case there is a need for virtualization. For the first difficulty the obstacles were glued to the surface of the arena to ensure that they'll remain their exact position throughout preparing and evaluation processes. Due to a need in frequent changes in obstacle positions, in the case of second difficulty they were not glued.
+
+\subsection{Hardware}
+
+To collect the training data and test the trained models we use the same JetBot by NVIDIA that was used in previous works from ScaDS.AI. It has $4$ GB of video-memory and $128$ CUDA-cores that are able to operate at the maximum of $921$ MHz clock speed. These computational abilities are enough for the system to be able to execute the final control prediction pipeline at the frequency of $4$ times per second. As for the moving part, it consists of 2 electro-motors connected to the computing unit. To control the mechanical part of the robot we used the JetBot API, which very conveniently has Python bindings. There are multiple modes in which one could operate the JetBot, but the most straightforward approach, which was used in this thesis, is to directly set the speeds of the motors to values in range $(0,1)$.
+
+\subsection{Data Acquisition}
+
+To be able to perform supervised training on a demonstration data (Behavioral Cloning), a labeled dataset needed. The dataset $D$ is represented as a vector where each entry $(x_i, y_i) \in D$ is a tuple, where $x_i$ is the data obtained from the sensors (camera input) and $y_i$ is the vector that represents the controls required for the vehicle to move at the current point in time. In this case, a gamepad was used to be able to collect the data and specifically the inclination of it's left stick are used to calculate the motor speeds of the JetBot. Specially for the acquisition part, a special software pipeline was developed, the main purpose of which was to enable the control of the vehicle, collection of data from the sensors and storing the collected data. The pipeline consists of two software components: \textit{server}, which is executed on the JetBot itself, and \textit{client}, which is executed on any other machine connected to the same network as JetBot. The developed pipeline works as follows:
+
+\begin{itemize}
+  \item The server program on the JetBot is started. It consists of two separate threads.
+  \item In one thread the OpenCV video capturing pipeline is started.
+  \item In another thread a TCP server starts listening for a new connection on a particular port. Python's internal socket library was used to perform all the network operations.
+  \item On another machine the client software is launched. This program ensures that the gamepad is connected to the machine. To obtain information about connected devices and listen for controlling inputs from the gamepad the Pygame library was used.
+  \item When the connection is established, the server on JetBot awaits the input data from the port in a loop.
+  \item Upon receiving the first controlling input from the gamepad the client software starts continuously sending the current position of the gamepad's stick to the server.
+  \item Once the new data is received in the TCP-server-thread, the variable that is shared between both threads is updated.
+  \item Once the video-thread captures a new frame, it is stored on the device. Then it checks for the updates in the controlling input's variable and then derives the motor inputs from this data. For a gamepad's stick position represented as $(x, y)$, the inputs for left and right motors are calculated as follows:
+    \begin{algorithmic}[1]
+      \Function{CalculateMotorInputs}{$x, y$}
+      \State $\text{rotation\_quotient} \gets 0.5$
+      \State $left\_power \gets -y + x \cdot \text{rotation\_quotient}$
+      \State $right\_power \gets -y - x \cdot \text{rotation\_quotient}$
+      \State $max\_power \gets \max\left( \left|left\_power\right|, \left|right\_power\right|, 1 \right)$
+      \State $left\_power \gets left\_power / max\_power$
+      \State $right\_power \gets right\_power / max\_power$
+      \State \Return $left\_power, right\_power$
+      \EndFunction
+    \end{algorithmic}
+  \item Using JetBot API the values are passed to the motors and the cycle continues until the termination of the program.
+  \item When the program is terminated, a process of transferring all of the sensor data from the JetBot to the client is started.
+  \item At the moment the data transfer is finished, all the video frames are stored in a separate directory. The controlling sequence is stored in the same directory in a default format used by the numpy Python library. The controls data is represented as a sequence of tuples $(x, y, t)$, where $x$ and $y$ encode gamepad's stick position and $t$ is the time in milliseconds from the start of the run.
+\end{itemize}
+
+The data was firstly collected using smaller frame rates (30FPS), but then it was decided to increase the frequency to 120FPS. The reasoning behind this was that, although the system is not able to execute the agent on such high frequencies, the frame sequence could be split while training and it would be possible to train the model using the frequency that suits the conditions.
