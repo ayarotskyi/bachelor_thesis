@@ -56,6 +56,10 @@ To be able to perform supervised training on a demonstration data (Behavioral Cl
 
 The data was firstly collected using smaller frame rates (30FPS), but then it was decided to increase the frequency to 120FPS. The reasoning behind this was that, although the system is not able to execute the agent on such high frequencies, the frame sequence could be split while training and it would be possible to train the model using the frequency that suits the conditions.
 
+Once all the data is collected, it should have ben filtered in the way that all the bad (unrepresentative) trajectories are deleted and the good trajectories are cropped to remove the data points that could obstruct the learning process of feature extraction. In particular, the image sequence that followed after the the JetBot crossing the last obstacle pair was completely deleted since it didn't contain any useful demonstration data.
+
+The final dataset consists of $22017$ labeled images and is split into 2 parts: first difficulty and second difficulty. It must be said that the quality of the data for the second difficulty is not as good as for the first one and the quantity of the data is too small even for the first difficulty. The first difficulty part consists of $15008$ data-points and the rest if the second difficulty. Considering that the second difficulty requires a lot more generalizability from the model than the first one, the dataset for the second difficulty should've contained more data and it should've been more diverse and with better feature distribution variance. Due to time restrictions, the amount of work load that this thesis required and the time-consuming and difficult process of obtaining and filtering new data, it was decided to continue the training process using the existing dataset.
+
 \section{Data Pre-processing}
 
 Before starting the training with the data that was collected, the next step is to pre-process it to make training more effective and to reduce the amount of noise that the model could mishandle for a feature. The preprocessing steps for the images that were used in the final iteration of the model training process are as follows:
@@ -70,6 +74,7 @@ Before starting the training with the data that was collected, the next step is 
 \end{enumerate}
 
 \subsection{Edge detection}
+\label{sec:edge-detection}
 
 Despite the pre-processing steps being straightforward and not convoluted in the final iteration of the agent, a huge work was done on experimenting with different approaches and figuring out, what works the best.
 
@@ -78,5 +83,41 @@ Farag et al. \autocite{8855753} came up with a sound future work proposition in 
 Despite edge detection being a very promising technique, the training was not able to achieve any good results using this approach. Another interesting development possibility was was to use Quantized Neural Network (QNN). In this method all the weights are represented as either integer values or even single-digit binary values. Since Canny edge detector algorithm produces binary matrix, it would've been possible to develop a quantized CNN that would derive features from such matrix. Such approach would drastically lower the size of the model and increase the computational speed, since integer-valued operations cost less computing cycles than operations with the floating point.
 
 \section{Model Architecture}
+
+One of the main tasks of this thesis was to develop an architecture of the CNN that would be able to learn to extract sufficient features from the image sequence data. Before starting the development of the architecture it had already been established that the model will have to be able to extract not only spacial features from the image, but also temporal features from the sequence of previous images. It has lead to the necessity to use a concept of memory stack \autocite{schneeberger2024end} \autocite{schaller2023train}.
+
+Different configurations and approaches were tested to find the best model architecture that would be able to learn to extract features under the constraint of the poor quality of the data. In the scope of this work, tens of model architectures and their configurations were trained. Many of them didn't prove to be efficient in the task solving and were immediately put aside after testing. Here is the listing of the most performative models:
+
+\begin{enumerate}
+  \item \textbf{Previous theses' approach:} \\
+    The approach of Schneeberger \autocite{schneeberger2024end} and Schaller \autocite{schaller2023train} consisted of using the convolutional channels to process the sequence --- one channel per image. For this purpose, the CNN model from the OpenAI's Stable Baselines 3 (the same model that was used in \autocite{schneeberger2024end}) was replicated using Keras (originally it was implemented in PyTorch) and slightly corrected to fit the dimensional requirements. The architecture is depicted in figure \ref{fig:sb3cnn-arch}.
+    \begin{figure}[htbp]
+      \centering
+      \includegraphics[width=0.8\textwidth]{Images/SB3CNN_architecture.png}
+      \caption{Architecture diagram of the CNN model from Stable Baselines 3.}
+      \label{fig:sb3cnn-arch}
+    \end{figure}
+    The model didn't show well during the training --- because of the absence of improvement in the validation loss, the training was terminated automatically by the Early Stopping mechanism already on epoch $10$.
+  \item \textbf{DAVE-2:} \\
+    The architecture used by researchers from NVIDIA in \autocite{bojarski2016endendlearningselfdriving} was replicated exactly as it is in the paper. This is the only model that was used in this thesis that didn't use any kind of memory mechanism and simultaneously the only model that didn't require any kind of preprocessing to be done, except for image cropping. The model takes the raw image as an input (3-channeled input layer is used to process red, green and blue components of the image). The architecture is demonstrated in figure \ref{fig:dave-2-arch}.
+    \begin{figure}[htbp]
+      \centering
+      \includegraphics[width=0.5\textwidth]{Images/DAVE-2_architecture.png}
+      \caption{DAVE-2 architecture.}
+      \label{fig:dave-2-arch}
+    \end{figure}
+  \item \textbf{BCNet with LSTM:} \\
+    BCNet is the name of the architecture used in \autocite{8855753}. It resembles DAVE-2 in many ways, but has some significant distinctions (number of layers and layer sizes). The goal in \autocite{8855753} was to develop a model that would predict the steering angle of the vehicle. Certain corrections had to be made in order to fit this model into the setting of current thesis --- including dimensional changes in layers, output etc. Farag et al. \autocite{8855753} proposed multiple possible improvements for their system, including usage of Long Short-Term memory (LSTM) layers and edge detection mechanism for images before passing them into the CNN. As already stated in \autoref{sec:edge-detection}, edge detection hasn't proven to be a working solution that would somewhat improve the network's feature extraction abilities.
+
+    The architecture of the model is illustrated in figure \ref{fig:BCNet-LSTM-arch}. In order to be able to combine the LSTM and normal architecture in one model, the the usage of Time Distributed layers from Keras was involved. These layers enable to perform transformation using convolutional layers on each of the images in the data sequence separately and then pass the transformed sequence to the LSTM in one batch.
+    \begin{figure}[htbp]
+      \centering
+      \includegraphics[width=0.9\textwidth]{Images/BCNetLSTM_architecture.png}
+      \caption{BCNet with LSTM layers. The Time Distributed layers represent the Convolutional, Flattening and Dropout layers of the network.}
+      \label{fig:BCNet-LSTM-arch}
+    \end{figure}
+\end{enumerate}
+
+The detailed explanation of performance testing and comparison between models is described in \autoref{cha:Evaluation}.
 
 % TODO: model architecture, model diagram, image preprocessing diagram
