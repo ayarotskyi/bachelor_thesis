@@ -1,41 +1,67 @@
-\chapter{Model Training}
+\chapter{Main Chapter}
 \label{cha:Main}
 
 \section{Environment Setup}
 
 \subsection{Arena}
 
-The arena used in this thesis can be represented as a $(2 \times 1)m$ surface, on which the obstacles with dimensions $(4 \times 4 \times 16) cm$ are installed. The setup resembles the one used in the thesis of König \autocite{konig2022model} with the distinction that in the current thesis all the obstacles are of one color. To achieve preciseness in measurements, stability and robustness of the material, it was decided to use the 3D-printing technology for the obstacle creating. Such approach also ensures that the process of transferring the setup into the virtual reality goes smoothly, in case there is a need for virtualization. For the first difficulty the obstacles were glued to the surface of the arena to ensure that they'll remain their exact position throughout preparing and evaluation processes. Due to a need in frequent changes in obstacle positions, in the case of second difficulty they were not glued. In every experiment run there are three obstacle pairs installed on the arena. Their position is deliberately chosen to increase the probability that they'd be in the sight of the camera the whole time before the robot passes them.
+The arena used in this thesis is represented as a \(2 \times 1\) meter surface, on which obstacles measuring \(4 \times 4 \times 16\) cm are placed. The setup resembles the one used in König’s thesis \autocite{konig2022model}, with the key difference being that all obstacles in the current thesis are of a single color. To ensure measurement precision as well as material stability and robustness, 3D-printing technology was chosen for obstacle fabrication. This approach also facilitates a smooth transition to virtual reality, in case virtualization becomes necessary.
+
+To address the first difficulty, the obstacles were glued to the arena surface to ensure they maintained their exact positions during preparation and evaluation. However, for the second difficulty (where frequent repositioning of obstacles is required) they were left unglued. In each experimental run, three pairs of obstacles are installed on the arena. Their positions are deliberately selected to maximize the likelihood that they remain within the camera’s field of view until the robot passes them.
 
 \subsection{Hardware}
 
-To collect the training data and test the trained models we use the same JetBot by NVIDIA that was used in previous works from ScaDS.AI. It has $4$ GB of video-memory and $128$ CUDA-cores that are able to operate at the maximum of $921$ MHz clock speed. These computational abilities are enough for the system to be able to execute the final control prediction pipeline at the frequency of $4$ times per second. As for the moving part, it consists of 2 electro-motors connected to the computing unit. To control the mechanical part of the robot we used the JetBot API, which very conveniently has Python bindings. There are multiple modes in which one could operate the JetBot, but the most straightforward approach, which was used in this thesis, is to directly set the speeds of the motors to values in range $[-1,1]$.
+To collect training data and evaluate the trained models, the NVIDIA JetBot is employed, consistent with previous research conducted by ScaDS.AI. The JetBot is powered by a Jetson Nano module, which features 4 GB of LPDDR4 memory and 128 CUDA cores, capable of running at a maximum clock speed of 921 MHz. These computational capabilities are sufficient to execute the entire control inference pipeline at a frequency of 4 Hz, ensuring timely responses for real-time navigation tasks. The detailed description of the pipeline is represented in \autoref{sec:pipeline}.
+
+The movement system consists of two DC motors with integrated encoders, connected to the Jetson Nano through a motor driver interface. This allows the control of the robot’s differential drive mechanism, enabling it to perform turns and controlled straight motion. The motors are powered by a rechargeable lithium-ion battery, providing enough energy for several hours of operation under typical loads.
+
+For motor control and overall robot management, the JetBot API was used, which conveniently provides \texttt{Python} bindings. This allows integration with the data acquisition and inference components, all of which are written in \texttt{Python}. Although the API includes various methods to control the JetBot, this thesis adopts the direct velocity control method. For each of the two motors the velocity can be set to any value within the range \([-1, 1]\), where \(-1\) corresponds to full reverse, \(0\) to a stationary motor, and \(1\) to full forward speed. This approach simplifies the control logic and makes the task of mapping the joystick inputs to control signals more straightforward.
+
+Additional peripherals include a wide-angle Raspberry Pi Camera BMP (V2) module, used for visual input, and a Wi-Fi module for remote access and debugging. The camera captures frames at a resolution suitable for both training and real-time inference with the maximum frame rate of 120 Hz.
 
 \subsection{Software}
-For the simplicity of making frequent changes to the model architecture, it was decided to use the Keras framework for Python programming language. This is a high-level framework that was built on top of existing Tensorflow library, which encapsulates all the GPU-computations and low-level details, simplifying the development to machine learning models. The main reasoning for choosing this framework were the simplicity of the syntax and a large quantity of ready-to-use layers, activation functions, learning optimizators etc. It also comes with very convenient toolset for neural network training, that includes embedded data augmentator for image datasets. Unfortunately, since dealing with the data sequences, which need to be handled very specifically in order to train the model using the right framerate, a custom data augmentation pipeline was developed.
 
-There was a problem in matching the versions of tensorflow between different devices. The Jetson hardware supports only a particular version of cuDNN, which is required for Tensorflow. Therefore, there was a need in downgrading the version of the library for the whole project.
+To facilitate frequent modifications to the model architecture, the \texttt{Keras} framework was chosen for development. \texttt{Keras} is a high-level neural network API for \texttt{Python} programming language built on top of \texttt{TensorFlow}, which handles GPU acceleration, memory management, and other low-level operations. This abstraction significantly simplifies the design and training of deep learning models. The primary motivations for selecting \texttt{Keras} include its intuitive syntax, extensive library of pre-built layers, activation functions, loss functions, and optimizers, as well as its strong community support and documentation.
 
-For dealing with large arrays and performing fast computations on matrices a NumPy Python library was utilized. It comes with a large number of mathematical functions that execute the compiled C++ code underneath, which gives such dynamic language as Python the fast computational advantages of native programming languages.
+\texttt{Keras} also includes a convenient toolkit for training workflows, featuring integrated support for image data preprocessing and augmentation. However, since this thesis involves working with temporal sequences of image frames, which requires accurate frame rate consistency for the training, a custom data augmentation pipeline was implemented. This custom solution ensures that temporal integrity is maintained when transforming image sequences during training, which is critical for models that rely on time-dependent input data.
 
-All the operations that were performed on images were done using the OpenCV Python library. This library comes with a large quantity of methods to transform, modify and store the image data. It was a very useful tool throughout the whole work on the thesis.
+During development, version compatibility issues were encountered, particularly with \texttt{TensorFlow} on the Jetson Nano hardware. The Jetson platform supports only specific versions of cuDNN, a prerequisite for GPU-accelerated \texttt{TensorFlow}. Consequently, it was necessary to downgrade \texttt{TensorFlow} to a compatible version across the entire project to maintain consistency between training and experimental environments.
+
+For numerical operations, the \texttt{NumPy} library was employed. \texttt{NumPy} provides a rich collection of mathematical functions that are implemented in optimized \texttt{C/C++} code. This enables efficient numerical computation in \texttt{Python}, which is essential for tasks such as preprocessing datasets, manipulating input tensors, and analyzing model outputs.
+
+All image processing tasks, including resizing, cropping, filtering, and saving frames, were performed using the \texttt{OpenCV} library. \texttt{OpenCV} offers an extensive suite of image manipulation functions and is highly optimized for real-time performance. It proved indispensable throughout the development process, particularly during data collection, visualization, and debugging phases.
 
 \section{Data Acquisition}
 
-To be able to perform supervised training on a demonstration data (Behavioral Cloning), a labeled dataset needed. The dataset $D$ is represented as a vector where each entry $(x_i, y_i) \in D$ is a tuple, where $x_i$ is the data obtained from the sensors (camera input) and $y_i$ is the vector that represents the controls required for the vehicle to move at the current point in time. In this case, a gamepad was used to be able to collect the data and specifically the inclination of it's left stick are used to calculate the motor speeds of the JetBot. Specially for the acquisition part, a special software pipeline was developed, the main purpose of which was to enable the control of the vehicle, collection of data from the sensors and storing the collected data. The pipeline consists of two software components: \textit{server}, which is executed on the JetBot itself, and \textit{client}, which is executed on any other machine connected to the same network as JetBot. The developed pipeline works as follows:
+To perform supervised learning using Behavioral Cloning, it was necessary to collect a labeled dataset. The dataset \( D \) is represented as a sequence of input-output pairs \( (x_i, y_i) \in D \), where \( x_i \) denotes the sensor input (in this case, camera frames), and \( y_i \) represents the corresponding control signal required for the robot at that point in time. To generate these labels, a gamepad was used, with the inclination of its left analog stick mapped to motor speed values for the JetBot using a special function.
+
+To streamline the data collection process, a custom data acquisition pipeline was developed. Its primary goals were to (1) allow real-time control of the JetBot via the gamepad, (2) capture synchronized sensor data, and (3) store the collected data in a structured format. The pipeline consists of two components:
+
+\begin{itemize}
+  \item \textbf{Server}: runs on the JetBot and handles both motor control and video capture.
+  \item \textbf{Client}: runs on an external machine connected to the same local network, responsible for reading gamepad inputs and sending them to the server.
+\end{itemize}
+
+The pipeline operates as follows:
 
 \begin{enumerate}
-  \item The server program on the JetBot is started. It consists of two separate threads.
-  \item In one thread the OpenCV video capturing pipeline is started.
-  \item In another thread a TCP server starts listening for a new connection on a particular port. Python's internal socket library was used to perform all the network operations.
-  \item On another machine the client software is launched. This program ensures that the gamepad is connected to the machine. To obtain information about connected devices and listen for controlling inputs from the gamepad the Pygame library was used.
-  \item When the connection is established, the server on JetBot awaits the input data from the port in a loop.
-  \item Upon receiving the first controlling input from the gamepad the client software starts continuously sending the current position of the gamepad's stick to the server.
-  \item Once the new data is received in the TCP-server-thread, the variable that is shared between both threads is updated.
-  \item Once the video-thread captures a new frame, it is stored on the device. Then it checks for the updates in the controlling input's variable and then derives the motor inputs from this data. For a gamepad's stick position represented as $(x, y)$, the inputs for left and right motors are calculated as follows in the algorithm \ref{alg:motor_inputs}.
-  \item Using JetBot API the values are passed to the motors and the cycle continues until the termination of the program.
-  \item When the program is terminated, a process of transferring all of the sensor data from the JetBot to the client is started.
-  \item At the moment the data transfer is finished, all the video frames are stored in a separate directory. The controlling sequence is stored in the same directory in a default format used by the NumPy Python library. The controls data is represented as a sequence of tuples $(x, y, t)$, where $x$ and $y$ encode gamepad's stick position and $t$ is the time in milliseconds from the start of the run.
+  \item The server program is launched on the JetBot. It spawns two concurrent threads:
+    \begin{itemize}
+      \item One thread initializes the OpenCV video capture pipeline to continuously collect frames from the onboard camera.
+      \item The second thread starts a TCP server using \texttt{Python}’s built-in \texttt{socket} library, listening for incoming connections on a designated port.
+    \end{itemize}
+
+  \item The client program is executed on another machine. It verifies the presence of a connected gamepad and begins listening for control inputs using the \texttt{pygame} library, which provides low-level access to hardware devices.
+
+  \item Once a connection is established, the client begins transmitting the current position of the gamepad’s left analog stick to the JetBot server.
+
+  \item The TCP server thread on the JetBot receives the input data and updates a shared variable, which is accessed by the video thread.
+
+  \item When a new video frame is captured, it is stored locally. Simultaneously, the server retrieves the most recent gamepad input from the shared variable and calculates the corresponding motor speeds. For an analog stick input represented as \( (x, y) \), the left and right motor speeds are derived using the calculations described in Algorithm \ref{alg:motor_inputs}.
+
+  \item The computed motor commands are then sent to the JetBot’s motors via the JetBot API, and the process repeats in real time until manual termination.
+
+  \item Upon termination, the collected data is transferred from the JetBot to the client machine. All captured video frames are stored in a dedicated directory as image files, while the control sequence is saved in the same directory using NumPy's binary format (\texttt{.npy}). Each control entry is stored as a tuple \( (x, y, t) \), where \( x \) and \( y \) are the analog stick positions, and \( t \) is the timestamp in milliseconds from the start of the recording session.
 \end{enumerate}
 
 \begin{algorithm}
@@ -54,70 +80,101 @@ To be able to perform supervised training on a demonstration data (Behavioral Cl
   \label{alg:motor_inputs}
 \end{algorithm}
 
-The data was firstly collected using smaller frame rates (30FPS), but then it was decided to increase the frequency to 120FPS. The reasoning behind this was that, although the system is not able to execute the agent on such high frequencies, the frame sequence could be split while training and it would be possible to train the model using the frequency that suits the conditions.
+The data was initially collected at a frame rate of 30 frames per second (FPS). However, it was later decided to increase the frame rate to 120 FPS, as it is the fastest framerate that the sensor can provide. The rationale behind this decision was that, although the system is not capable of executing the control policy at such a high frequency in real-time, the high-frame-rate sequences could be downsampled during training using time and frequency warping techniques \autocite{iglesias2023data}. This allows for greater flexibility in choosing the effective temporal resolution for training, depending on the model architecture and experimental requirements.
 
-Once all the data is collected, it should have ben filtered in the way that all the bad (unrepresentative) trajectories are deleted and the good trajectories are cropped to remove the data points that could obstruct the learning process of feature extraction. In particular, the image sequence that followed after the the JetBot crossing the last obstacle pair was completely deleted since it didn't contain any useful demonstration data.
+After data collection, a filtering step was applied to remove unrepresentative or low-quality trajectories. In particular, sequences that did not contribute meaningful information to the learning process (such as those recorded after the JetBot had passed the final obstacle pair) were discarded entirely. Additionally, some valid trajectories were cropped to eliminate irrelevant frames that might hinder effective feature extraction during training.
 
-The final dataset consists of $22017$ labeled images and is split into 2 parts: first difficulty and second difficulty. It must be said that the quality of the data for the second difficulty is not as good as for the first one and the quantity of the data is too small even for the first difficulty. The first difficulty part consists of $15008$ data-points and the rest if the second difficulty. Considering that the second difficulty requires a lot more generalizability from the model than the first one, the dataset for the second difficulty should've contained more data and it should've been more diverse and with better feature distribution variance. Due to time restrictions, the amount of work load that this thesis required and the time-consuming and difficult process of obtaining and filtering new data, it was decided to continue the training process using the existing dataset.
+The final dataset consists of 22,017 labeled images and is divided into two subsets: one for the first difficulty level and the other for the second difficulty level. The first difficulty subset contains 15,008 data points, while the remaining 7,009 correspond to the second difficulty.
+
+It is important to note that the quality and quantity of data for the second difficulty level are suboptimal. Compared to the first difficulty, the second requires a significantly higher degree of generalization from the model due to increased environmental variability. Ideally, the dataset for the second difficulty would have included more examples with greater diversity and a broader distribution of features. However, due to time constraints, the substantial workload involved in completing this thesis, and the labor-intensive nature of data acquisition and filtering, it was decided to proceed with training using the existing dataset.
 
 \section{Data Pre-processing}
 
-Before starting the training with the data that was collected, the next step is to pre-process it to make training more effective and to reduce the amount of noise that the model could mishandle for a feature. The preprocessing steps for the images that were used in the final iteration of the model training process are as follows:
+Before initiating the training process, the collected data must be pre-processed to enhance training efficiency and reduce the impact of irrelevant noise that could impair the model's ability to learn meaningful features. The pre-processing steps applied to the images used in the final training iteration are outlined below:
 
 \begin{enumerate}
-  \item \textbf{Gray-scaling} \\
-    There is a hardware restriction on the time and space complexity of the agent that we're able to run on the JetBot. Thus, the size of the model and it's computational time have a big impact on the frequency with which the model will be able to predict the controls. For this purpose, all the images are gray-scaled before passing them into the network. The formula $Y = 0.299 \times R + 0.587 \times G + 0.114 \times B$, where $R$, $G$ and $B$ are the matrices of the red, green and blue components of the image respectively, was used to perform the gray-scaling operation.
-  \item \textbf{Pixel-centering} \\
-    For the CNN to achieve a good accuracy, it's not enough to train it on the raw data. As the experiments show \autocite{pal2016preprocessing}, the CNNs perform much better if the data they are fed is normalized in some way. In the final iteration of the agent all the images that are used as an input for the neural network are centralized right before passing them into the neural network using formula $Y_c = Y / 127.5 - 1$, where $Y$ is the gray-scaled image matrix.
-  \item \textbf{Region of Interest} \\
-    The region of interest  is cropped out of each image. This is done to reduce the dimensionality of the network, so that the computations are faster, and to increase the percentage of pixels that are important for feature extraction on the image.
+  \item \textbf{Grayscale Conversion} \\
+    Due to hardware limitations in terms of memory and computational resources on the JetBot platform, the model must be lightweight and capable of making inferences in real time. To reduce computational complexity and model size, all images are converted to grayscale prior to being fed into the neural network. This eliminates color information while preserving structural features necessary for decision-making. The grayscale transformation is performed using the standard luminance-preserving formula:
+    \[
+      Y = 0.299 \times R + 0.587 \times G + 0.114 \times B
+    \]
+    where \( R \), \( G \), and \( B \) denote the red, green, and blue color channels, respectively.
+
+  \item \textbf{Pixel Centering} \\
+    Convolutional Neural Networks (CNNs) typically benefit from normalized input data. As shown in prior research \autocite{pal2016preprocessing}, normalization helps accelerate convergence and improve model performance. In the final model implementation, all grayscale images are centered around zero by applying the following normalization:
+    \[
+      Y_c = \frac{Y}{127.5} - 1
+    \]
+    where \( Y \) is the grayscale image matrix and \( Y_c \) is the normalized output passed to the network.
+
+    The normalization approach was also experimented on, but it didn't show any better results compared to the pixel-centered approach.
+
+  \item \textbf{Region of Interest (ROI) Cropping} \\
+    To further reduce the computational load and focus the model’s attention on the most relevant parts of the input, a region of interest is cropped from each image. This not only reduces the input dimensionality (thereby speeding up both training and inference), but also increases the proportion of informative pixels that are likely to contribute to effective feature extraction.
 \end{enumerate}
 
-\subsection{Edge detection}
+\subsection{Edge Detection}
 \label{sec:edge-detection}
 
-Despite the pre-processing steps being straightforward and not convoluted in the final iteration of the agent, a huge work was done on experimenting with different approaches and figuring out, what works the best.
+Although the final version of the agent utilizes relatively simple and direct pre-processing steps, a substantial amount of experimentation was conducted to evaluate other more advanced techniques and determine the most effective configuration.
 
-Farag et al. \autocite{8855753} came up with a sound future work proposition in their work: to utilize edge detection mechanism on an image before passing it into the CNN. On an intuitive level this approach would enable the CNN to be able to derive features from images more easily, since all the objects would be more distinguishable. Theoretically it would simplify the task of selecting obstacles on the way of the robot, so that the model would be able to lean to derive more complex and meaningful for the task features faster. Two edge detection algorithms were tested: one of them was the Canny edge detector \autocite{canny1986computational}, as proposed in \autocite{8855753}, another one was the Sobel filter \autocite{sobel2014history}. After training and experimenting with the models trained using both these approaches, there were no signs that edge detection would somehow help the model better generalize more complex features. The best results that could be obtained using edge detectors were for the JetBot to stably pass the second pair of obstacles and then fail to pass the third one. The first model trained on data that did not go through the process of edge detection has shown great performance improvement in comparison to it's predecessors. The main reason for such poor performance could be that the algorithms are very noise-prone. Although methods such as Gaussian blurring were used to smooth the images and decrease noise level, the algorithms still produced artifacts that the model was very likely to mismatch for a feature.
+One such technique, proposed as a direction for future work by Farag et al. \autocite{8855753}, is the application of edge detection to input images prior to processing by a Convolutional Neural Network (CNN). The intuition behind this method is that edge detection enhances object boundaries, potentially making it easier for a CNN to extract meaningful features from the input. This, in theory, could simplify the task of identifying obstacles and accelerate the model’s ability to learn complex and task-relevant visual patterns.
 
-Despite edge detection being a very promising technique, the training was not able to achieve any good results using this approach. Another interesting development possibility was was to use Quantized Neural Network (QNN). In this method all the weights are represented as either integer values or even single-digit binary values. Since Canny edge detector algorithm produces binary matrix, it would've been possible to develop a quantized CNN that would derive features from such matrix. Such approach would drastically lower the size of the model and increase the computational speed, since integer-valued operations cost less computing cycles than operations with the floating point.
+To test this hypothesis, two well-known edge detection algorithms were evaluated: the Canny edge detector \autocite{canny1986computational}, as recommended by Farag et al. \autocite{8855753}, and the Sobel filter \autocite{sobel2014history}. Models were trained using data processed by each of these algorithms. However, empirical results showed no significant improvements in performance or generalization capability. The best outcome achieved with edge-detected inputs was that the JetBot was able to consistently pass the second pair of obstacles but failed to navigate the third.
+
+In contrast, the baseline model trained on unprocessed grayscale images exhibited significantly better performance. The poor results with edge-detected inputs are likely due to the sensitivity of these algorithms to noise. Although Gaussian blurring was applied to smooth the images and reduce noise, both Canny and Sobel methods still introduced visual artifacts that the model may have incorrectly interpreted as important features.
+
+While edge detection remains a conceptually promising technique, it did not yield practical benefits in the context of this project. An additional idea explored was the use of Quantized Neural Networks (QNNs), in which network weights are represented as low-precision integers or even binary values. Given that the Canny edge detector produces binary output, it would be theoretically feasible to design a quantized CNN specifically tailored to such input. This approach could significantly reduce model size and enhance computational efficiency, as integer operations are less resource-intensive than floating-point calculations. However, due to time constraints and the lack of observed performance gains from edge detection, this prospect was not pursued further in this work.
 
 \section{Model Architecture}
 
-One of the main tasks of this thesis was to develop an architecture of the CNN that would be able to learn to extract sufficient features from the image sequence data. Before starting the development of the architecture it had already been established that the model will have to be able to extract not only spacial features from the image, but also temporal features from the sequence of previous images. It has lead to the necessity to use a concept of memory stack \autocite{schneeberger2024end} \autocite{schaller2023train}.
+One of the primary objectives of this thesis was to design a Convolutional Neural Network (CNN) architecture capable of effectively learning and extracting relevant features from image sequences. As in previous works, the model would need to capture not only spatial features from individual frames but also temporal dependencies across a sequence of images. This requirement necessitated the incorporation of a memory mechanism, as introduced in prior works such as \autocite{schneeberger2024end} and \autocite{schaller2023train}.
 
-Different configurations and approaches were tested to find the best model architecture that would be able to learn to extract features under the constraint of the poor quality of the data. In the scope of this work, tens of model architectures and their configurations were trained. Many of them didn't prove to be efficient in the task solving and were immediately put aside after testing. Here is the listing of the most performative models:
+To identify the most suitable model architecture for the task, various configurations and design strategies were explored. Dozens of architectures were implemented and evaluated, with many discarded early due to poor performance. Below is a summary of the most effective models tested:
 
 \begin{enumerate}
-  \item \textbf{Previous theses' approach:} \\
-    The approach of Schneeberger \autocite{schneeberger2024end} and Schaller \autocite{schaller2023train} consisted of using the convolutional channels to process the sequence --- one channel per image. For this purpose, the CNN model from the OpenAI's Stable Baselines 3 (the same model that was used in \autocite{schneeberger2024end}) was replicated using Keras (originally it was implemented in PyTorch) and slightly corrected to fit the dimensional requirements. The architecture is depicted in figure \ref{fig:sb3cnn-arch}.
+  \item \textbf{Previous Thesis-Based Approach:} \\
+    The architectures proposed by Schneeberger \autocite{schneeberger2024end} and Schaller \autocite{schaller2023train} processed the input image sequence using multiple convolutional channels --- one per image. To replicate this design, the CNN model from OpenAI’s Stable Baselines 3, originally implemented in \texttt{PyTorch}, was reimplemented in \texttt{Keras} and adjusted to conform to dimensional requirements. The architectural layout is shown in \autoref{fig:sb3cnn-arch}.
+
     \begin{figure}[htbp]
       \centering
       \includegraphics[width=0.8\textwidth]{Images/SB3CNN_architecture.png}
       \caption{Architecture diagram of the CNN model from Stable Baselines 3.}
       \label{fig:sb3cnn-arch}
     \end{figure}
-    The model didn't show well during the training --- because of the absence of improvement in the validation loss, the training was terminated automatically by the Early Stopping mechanism already on epoch $10$.
+
+    This model didn't show the ability to learn from the given dataset, most likely due to it being too shallow to be able to capture meaningful features from high-dimensional inputs. The validation loss sank early, causing the Early Stopping mechanism to terminate training at epoch 10.
+
   \item \textbf{DAVE-2:} \\
-    The architecture used by researchers from NVIDIA in \autocite{bojarski2016endendlearningselfdriving} was replicated exactly as it is in the paper. This is the only model that was used in this thesis that didn't use any kind of memory mechanism and simultaneously the only model that didn't require any kind of preprocessing to be done, except for image cropping. The model takes the raw image as an input (3-channeled input layer is used to process red, green and blue components of the image). The architecture is demonstrated in figure \ref{fig:dave-2-arch}.
+    This architecture, originally developed by NVIDIA researchers \autocite{bojarski2016endendlearningselfdriving}, was replicated exactly as described in the original publication. It is the only model evaluated in this thesis that does not incorporate any memory mechanism and also does not require preprocessing beyond simple image cropping. The network accepts raw RGB images as input using a 3-channel input layer and is visualized in \autoref{fig:dave-2-arch}.
+
     \begin{figure}[htbp]
       \centering
       \includegraphics[width=0.5\textwidth]{Images/DAVE-2_architecture.png}
       \caption{DAVE-2 architecture.}
       \label{fig:dave-2-arch}
     \end{figure}
-  \item \textbf{BCNet with LSTM:} \\
-    BCNet is the name of the architecture used in \autocite{8855753}. It resembles DAVE-2 in many ways, but has some significant distinctions (number of layers and layer sizes). The goal in \autocite{8855753} was to develop a model that would predict the steering angle of the vehicle. Certain corrections had to be made in order to fit this model into the setting of current thesis --- including dimensional changes in layers, output etc. Farag et al. \autocite{8855753} proposed multiple possible improvements for their system, including usage of Long Short-Term memory (LSTM) layers and edge detection mechanism for images before passing them into the CNN. As already stated in \autoref{sec:edge-detection}, edge detection hasn't proven to be a working solution that would somewhat improve the network's feature extraction abilities.
 
-    The architecture of the model is illustrated in figure \ref{fig:BCNet-LSTM-arch}. In order to be able to combine the LSTM and normal architecture in one model, the the usage of Time Distributed layers from Keras was involved. These layers enable to perform transformation using convolutional layers on each of the images in the data sequence separately and then pass the transformed sequence to the LSTM in one batch.
+  \item \textbf{BCNet with LSTM:} \\
+    BCNet, proposed by Farag et al. \autocite{8855753}, shares structural similarities with DAVE-2 but includes key differences such as the number and sizes of layers. While originally designed to predict the vehicle’s steering angle, the model was adapted for this thesis to conform to the task of predicting the velocity of the motors.
+
+    In their work, Farag et al. also proposed several potential improvements, including the integration of Long Short-Term Memory (LSTM) layers and the use of edge detection during preprocessing. As discussed in \autoref{sec:edge-detection}, edge detection did not yield beneficial results in this context. However, the integration of LSTM layers was implemented to capture temporal patterns in the image sequence. LSTM layers were used in combination with normal convolutional layers, in contrary to using the normal
+
+    The resulting architecture is illustrated in \autoref{fig:BCNet-LSTM-arch}. To integrate the LSTM component, \texttt{Keras}’s \texttt{TimeDistributed} layers were employed. These layers apply convolutional operations to each frame in the sequence independently, enabling the sequential outputs to be passed collectively to the LSTM block for temporal processing.
+
     \begin{figure}[htbp]
       \centering
       \includegraphics[width=0.9\textwidth]{Images/BCNetLSTM_architecture.png}
-      \caption{BCNet with LSTM layers. The Time Distributed layers represent the Convolutional, Flattening and Dropout layers of the network.}
+      \caption{BCNet with LSTM layers. The \texttt{TimeDistributed} layers apply convolutional, flattening, and dropout operations across the sequence.}
       \label{fig:BCNet-LSTM-arch}
     \end{figure}
 \end{enumerate}
 
-The detailed explanation of performance testing and comparison between models is described in \autoref{cha:Evaluation}.
+A detailed evaluation of the performance and comparison among these models is provided in \autoref{cha:Evaluation}.
 
-% TODO: model architecture, model diagram, image preprocessing diagram
+\section{Model Training}
+
+\section{Control Inference Pipeline}
+\label{sec:pipeline}
+
+% TODO: image preprocessing diagram, training, control pipeline
