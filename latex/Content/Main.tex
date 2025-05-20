@@ -90,7 +90,7 @@ It is important to note that the quality and quantity of data for the second dif
 
 \section{Data Pre-processing}
 
-Before initiating the training process, the collected data must be pre-processed to enhance training efficiency and reduce the impact of irrelevant noise that could impair the model's ability to learn meaningful features. The pre-processing steps applied to the images used in the final training iteration are outlined below:
+Before initiating the training process, the collected data must be pre-processed to enhance training efficiency and reduce the impact of irrelevant noise that could impair the model's ability to learn meaningful features. The pre-processing steps applied to the images and used in the final training iteration are illustrated in \autoref{fig:preprocessing} and outlined below:
 
 \begin{enumerate}
   \item \textbf{Grayscale Conversion} \\
@@ -100,6 +100,9 @@ Before initiating the training process, the collected data must be pre-processed
     \]
     where \( R \), \( G \), and \( B \) denote the red, green, and blue color channels, respectively.
 
+  \item \textbf{Region of Interest (ROI) Cropping} \\
+    To further reduce the computational load and focus the model’s attention on the most relevant parts of the input, a region of interest is cropped from each image. This not only reduces the input dimensionality (thereby speeding up both training and inference), but also increases the proportion of informative pixels that are likely to contribute to effective feature extraction.
+
   \item \textbf{Pixel Centering} \\
     Convolutional Neural Networks (CNNs) typically benefit from normalized input data. As shown in prior research \autocite{pal2016preprocessing}, normalization helps accelerate convergence and improve model performance. In the final model implementation, all grayscale images are centered around zero by applying the following normalization:
     \[
@@ -107,11 +110,18 @@ Before initiating the training process, the collected data must be pre-processed
     \]
     where \( Y \) is the grayscale image matrix and \( Y_c \) is the normalized output passed to the network.
 
-    The normalization approach was also experimented on, but it didn't show any better results compared to the pixel-centered approach.
+    Z-score normalization approach was also experimented on, but it didn't show any better results compared to the pixel-centered approach.
 
-  \item \textbf{Region of Interest (ROI) Cropping} \\
-    To further reduce the computational load and focus the model’s attention on the most relevant parts of the input, a region of interest is cropped from each image. This not only reduces the input dimensionality (thereby speeding up both training and inference), but also increases the proportion of informative pixels that are likely to contribute to effective feature extraction.
+  \item \textbf{Update memory stack} \\
+    Once the image is passed through all of the preprocessing steps, the memory stack of size $N$ is updated by pushing the frame to its top position. The stack size $N$ is usually set to $10$ after hyperparameter tuning that yielded the best parameters with which the model has the best training results.
 \end{enumerate}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.9\textwidth]{Images/preprocessing.png}
+  \caption{Input preprocessing pipeline.}
+  \label{fig:preprocessing}
+\end{figure}
 
 \subsection{Edge Detection}
 \label{sec:edge-detection}
@@ -120,7 +130,24 @@ Although the final version of the agent utilizes relatively simple and direct pr
 
 One such technique, proposed as a direction for future work by Farag et al. \autocite{8855753}, is the application of edge detection to input images prior to processing by a Convolutional Neural Network (CNN). The intuition behind this method is that edge detection enhances object boundaries, potentially making it easier for a CNN to extract meaningful features from the input. This, in theory, could simplify the task of identifying obstacles and accelerate the model’s ability to learn complex and task-relevant visual patterns.
 
-To test this hypothesis, two well-known edge detection algorithms were evaluated: the Canny edge detector \autocite{canny1986computational}, as recommended by Farag et al. \autocite{8855753}, and the Sobel filter \autocite{sobel2014history}. Models were trained using data processed by each of these algorithms. However, empirical results showed no significant improvements in performance or generalization capability. The best outcome achieved with edge-detected inputs was that the JetBot was able to consistently pass the second pair of obstacles but failed to navigate the third.
+To test this hypothesis, two well-known edge detection algorithms were evaluated: the Canny edge detector \autocite{canny1986computational}, as recommended by Farag et al. \autocite{8855753}, and the Sobel filter \autocite{sobel2014history}. These approaches were selected, because after testing multiple edge detection algorithms, they seemed to produce the most meaningful and noiseless outputs. Models were trained using data processed by each of these algorithms. However, empirical results showed no significant improvements in performance or generalization capability. The best outcome achieved with edge-detected inputs was that the JetBot was able to consistently pass the second pair of obstacles but failed to navigate the third.
+
+\begin{figure}[htbp]
+  \centering
+  \tabulinesep=1.2mm
+  \begin{tabu}{cc}
+    \includegraphics[width=0.4\textwidth]{Images/EdgeDetection/original.png} & \includegraphics[width=0.4\textwidth]{Images/EdgeDetection/blurred.png} \\
+    \parbox{0.4\textwidth}{\centering (a) Original grayscale image.} &
+    \parbox{0.4\textwidth}{\centering (b) Gaussian Blur is used to remove the noise before applying edge detection.} \\
+    \includegraphics[width=0.4\textwidth]{Images/EdgeDetection/canny_edges.png} & \includegraphics[width=0.4\textwidth]{Images/EdgeDetection/sobel_edges.png} \\
+    \parbox{0.4\textwidth}{\centering (c) Canny edge detection algorithm.} &
+    \parbox{0.4\textwidth}{\centering (d) Sobel filter applied to the image in $x$ and $y$ directions.} \\
+    \includegraphics[width=0.4\textwidth]{Images/EdgeDetection/morphological_edges.png} & \includegraphics[width=0.4\textwidth]{Images/EdgeDetection/log_edges.png} \\
+    \parbox{0.4\textwidth}{\centering (e) Morphological gradient operation for edge enhancement.} &
+    \parbox{0.4\textwidth}{\centering (f) Laplacian of Gaussian (LoG) edge detection.} \\
+  \end{tabu}
+  \caption{Examples of the output of different edge detection algorithms.}
+\end{figure}
 
 In contrast, the baseline model trained on unprocessed grayscale images exhibited significantly better performance. The poor results with edge-detected inputs are likely due to the sensitivity of these algorithms to noise. Although Gaussian blurring was applied to smooth the images and reduce noise, both Canny and Sobel methods still introduced visual artifacts that the model may have incorrectly interpreted as important features.
 
@@ -160,21 +187,21 @@ To identify the most suitable model architecture for the task, various configura
 
     In their work, Farag et al. also proposed several potential improvements, including the integration of Long Short-Term Memory (LSTM) layers and the use of edge detection during preprocessing. As discussed in \autoref{sec:edge-detection}, edge detection did not yield beneficial results in this context. However, the integration of LSTM layers was implemented to capture temporal patterns in the image sequence.
 
-    Both LSTM and convolutional LSTM layers were planned to be experimented on. However, since the \texttt{cuDNN} version installed on the JetBot is not the latest, some CUDA API features that are required to use \texttt{Keras}' \texttt{ConvLSTM2D} with GPU acceleration are not available. For this reason only casual convolutional LSTM layers were utilized to implement the architecture design of the model.
+    Both LSTM and convolutional LSTM layers were planned to be experimented on. However, since the \texttt{cuDNN} version installed on the JetBot is not the latest, some CUDA API features that are required to use \texttt{Keras}’s \texttt{ConvLSTM2D} with GPU acceleration are not available. For this reason only casual convolutional LSTM layers were utilized to implement the architecture design of the model.
 
     The resulting architecture is illustrated in \autoref{fig:BCNet-LSTM-arch}. To integrate the LSTM component, \texttt{Keras}’s \texttt{TimeDistributed} layers were employed. These layers apply convolutional operations to each frame in the sequence independently, enabling the sequential outputs to be passed collectively to the LSTM block for temporal processing.
 
     \begin{figure}[htbp]
       \centering
-      \includegraphics[width=0.9\textwidth]{Images/BCNetLSTM_architecture.png}
-      \caption{BCNet with LSTM layers. The \texttt{TimeDistributed} layers apply convolutional, flattening, and dropout operations across the sequence.}
+      \includegraphics[width=1.0\textwidth]{Images/BCNetLSTM_architecture.png}
+      \caption{BCNet with LSTM layers. The \texttt{TimeDistributed} layers represent convolutional, flattening, and dropout operations across the sequence.}
       \label{fig:BCNet-LSTM-arch}
     \end{figure}
 \end{enumerate}
 
 A detailed evaluation of the performance and comparison among these models is provided in \autoref{cha:Evaluation}.
 
-\section{Model Training}
+\section{Training Process}
 
 \section{Control Inference Pipeline}
 \label{sec:pipeline}
