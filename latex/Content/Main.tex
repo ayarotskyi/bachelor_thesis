@@ -157,7 +157,7 @@ While edge detection remains a conceptually promising technique, it did not yiel
 
 One of the primary objectives of this thesis was to design a Convolutional Neural Network (CNN) architecture capable of effectively learning and extracting relevant features from image sequences. As in previous works, the model would need to capture not only spatial features from individual frames but also temporal dependencies across a sequence of images. This requirement necessitated the incorporation of a memory mechanism, as introduced in prior works such as \autocite{schneeberger2024end} and \autocite{schaller2023train}.
 
-To identify the most suitable model architecture for the task, various configurations and design strategies were explored. Dozens of architectures were implemented and evaluated, with many discarded early due to poor performance. Below is a summary of the most effective models tested:
+To identify the most suitable model architecture for the task, various configurations and design strategies were explored. Dozens of architectures were implemented and evaluated, with many discarded early due to poor performance. Below is a summary of some of the architectures that were tested on the way of reaching the satisfactory results:
 
 \begin{enumerate}
   \item \textbf{Previous Thesis-Based Approach:} \\
@@ -199,11 +199,88 @@ To identify the most suitable model architecture for the task, various configura
     \end{figure}
 \end{enumerate}
 
-A detailed evaluation of the performance and comparison among these models is provided in \autoref{cha:Evaluation}.
-
 \section{Training Process}
+
+The training process for the models involves multiple stages, including data preprocessing, dynamic batching, augmentation, and iterative refinement of model hyperparameters. Due to the constraints of hardware resources, the training pipeline must be both efficient and robust. One of the main components enabling this is the data generator, which is responsible for assembling input sequences and labels on the fly, thereby allowing for large-scale training without exceeding system memory limits.
+
+\subsection{Data Generator}
+
+Given the size of the dataset, which exceeds the available Random Access Memory (RAM) on most devices, a dynamic data generator is implemented. Its primary function is to generate training data sequences incrementally, processing and yielding data batch by batch during training.
+
+The generator constructs temporal sequences of input frames, ensuring that the interval between consecutive frames in each sequence is not shorter than the minimum time interval required by the control inference pipeline to operate effectively. This interval is determined based on timestamp differences stored in the dataset. If a particular frame is the first in a trajectory and lacks any predecessors, the memory stack is padded with zero-valued matrices to account for the missing historical context.
+
+For training, a maximum frame frequency of 4 Hz is typically used. This rate provides a balance between temporal resolution and computational load and is sufficient for most models to make their predictions, particularly when controlling the JetBot at low velocities.
+
+After all frames are pre-processed and collected into the memory stack, a corresponding label must be generated for the data sequence. The label is obtained from the coordinates of the joystick's left analog stick in the frame immediately following the last frame in the sequence. Several alternative strategies were explored, including predicting the joystick position of the current frame or of a frame two steps ahead. However, predicting the next frame's joystick position yielded the best results. This can be explained by the latency of the inference pipeline: the system requires approximately $\frac{1}{4}$ seconds to compute the motor commands and invoke the API to apply them. In the case the model requires less time for the prediction, the pipeline is artificially slowed down to conform the target frequency. By the time this process is complete, the system's state has already changed. Therefore, predicting the immediate future state (i.e., the next frame) aligns more closely with real-world control requirements.
+
+An alternative approach was also evaluated, where the labels consisted of direct motor velocity signals rather than joystick coordinates. This method is inspired by the research of Hwangbo et al. \autocite{hwangbo2019learning}, who reported improved performance when training legged robots using low-level actuator signals. However, in experiments run on the JetBot, using motor velocities as labels led to significantly worse model performance compared to using analog stick coordinates. This difference is likely due to differences in robot construction (legged vs. wheeled), training methodologies, and experimental setups.
+
+Once the state-label pair is assembled, it is stored in a buffer array used for data augmentation. The number of stored instances is determined by a user-defined parameter passed to the data generator. During subsequent iterations, with a certain probability, the generator may retrieve a stored pair from the augmentation buffer, apply a set of transformations (see \autoref{sec:augmentation}), and yield the augmented data before proceeding with the next unmodified pair.
+
+If the data generator completes an iteration over all data points within a given subset of the dataset and entries remain in the augmentation buffer, it proceeds to process each of these stored entries. This stochastic sampling logic ensures that transformed pairs are not immediately following their original counterparts. Moreover, this approach guarantees that each data point is replicated and transformed precisely the number of times specified by the user-defined augmentation parameter.
+
+The step-by-step description of the data generator is described in the Algorithm \ref{alg:data_generator}.
+
+\subsection{Data Augmentation}
+\label{sec:augmentation}
+
+Data augmentation is a well-established strategy for improving model generalization, especially in cases where collecting large, diverse datasets is infeasible. In the context of time series data, augmentation methods can be particularly impactful due to the sequential dependencies and temporal structures inherent to the data. A comprehensive overview and taxonomy of such techniques are presented in the work by Iglesias et al. \autocite{iglesias2023data}, which categorizes time series augmentation strategies into domain-specific and domain-agnostic methods, including time warping, jittering, permutation, and window slicing, among others.
+
+This work adopts a hybrid augmentation strategy that applies both temporal and visual transformations to the training data. For the temporal component, **time warping** is implemented by dynamically adjusting the maximum allowed frame frequency \( f_{\text{max}} \) for data pairs retrieved from the augmentation buffer. By increasing or decreasing the temporal spacing between frames in a sequence, the generator effectively simulates variations in system response time or actuation speed, thus improving the model's robustness to timing deviations.
+
+On the visual side, several spatial transformations are applied to the input images. These transformations are applied probabilistically and independently to each image in the memory stack:
+
+\begin{itemize}
+  \item \textbf{Gaussian Noise Injection:} Gaussian noise with a random standard deviation \( \sigma \in [0, 0.5] \) is added to simulate sensor noise or varying lighting conditions.
+  \item \textbf{Translation:} The image is randomly shifted along both axes within a maximum offset of 9 pixels, simulating minor misalignments or camera movement.
+  \item \textbf{Rotation and Scaling:} A small random rotation (up to \( \pm 5^\circ \)) and scaling (within \( \pm 6\% \)) are applied using affine transformations. This accounts for slight perspective distortions and variations in camera zoom.
+\end{itemize}
+
+The augmentation process is applied during data generation, immediately before yielding the augmented state-label pair. This ensures that transformations are computed on-the-fly and vary across training epochs, further reducing the risk of overfitting.
+
+By combining time series augmentation principles, as outlined in \autocite{iglesias2023data}, with low-level image manipulation techniques, the data generator enhances both temporal and perceptual diversity in the training dataset. This dual-augmentation approach has shown to significantly improve the stability and adaptability of the resulting control model, particularly in environments with noisy inputs or fluctuating timing characteristics.
+
+\begin{algorithm}[H]
+  \caption{Data Generator for Incremental Training with Augmentation}
+  \begin{algorithmic}[1]
+    \Require Dataset $D$, max frame frequency $f_{max} = 4$ Hz, memory stack size $N$, augmentation factor $k$, augmentation probability $p$
+    \Ensure Yields $(state, label)$ pairs for training
+
+    \State Initialize augmentation buffer $A \gets \emptyset$
+    \ForAll{data points $d_i \in D$}
+    \State Initialize memory stack $M_i \gets \emptyset$
+    \State Set current index $j \gets i$
+    \While{$|M_i| < N$ and $timestamp(d_j) > 0$}
+    \If{$timestamp(d_j) - timestamp(d_{j-1}) \geq \frac{1}{f_{max}}$}
+    \State Append $d_j$ to $M_i$
+    \EndIf
+    \State $j \gets j - 1$
+    \EndWhile
+    \If{length of $M_i < N$}
+    \State Pad $M_i$ with zero-matrices until size $N$
+    \EndIf
+    \State Extract label $y_i$ from $d_{i+1}$
+    \State Store $(M_i, y_i)$ in $A$ $k$ times based on augmentation factor
+    \If{random() $< p$ and $A \neq \emptyset$}
+    \State Select random $(M_j, y_j)$ from $A$
+    \State Apply augmentation to $(M_j, y_j)$ to get $(\hat{M}_j, \hat{y}_j)$
+    \State \textbf{yield} $(\hat{M}_j, \hat{y}_j)$
+    \EndIf
+    \State \textbf{yield} $(M_i, y_i)$
+    \EndFor
+    \If{$A \neq \emptyset$}
+    \ForAll{$(M_j, y_j) \in A$}
+    \State Apply augmentation to $(M_j, y_j)$ to get $(\hat{M}_j, \hat{y}_j)$
+    \State \textbf{yield} $(\hat{M}_j, \hat{y}_j)$
+    \EndFor
+    \EndIf
+  \end{algorithmic}
+  \label{alg:data_generator}
+\end{algorithm}
+
+\subsection{Hyperparameters}
 
 \section{Control Inference Pipeline}
 \label{sec:pipeline}
 
-% TODO: image preprocessing diagram, training, control pipeline
+% TODO: check augmentation, create illustrations for the augmentation and finish hyperparameters
