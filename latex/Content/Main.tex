@@ -158,7 +158,9 @@ To identify the most suitable model architecture for the task, various configura
   \item \textbf{BCNet with LSTM:} \\
     BCNet, proposed by Farag et al. \autocite{8855753}, shares structural similarities with DAVE-2 but includes key differences such as the number and sizes of layers. While originally designed to predict the vehicle’s steering angle, the model was adapted for this thesis to conform to the task of predicting the velocity of the motors.
 
-    In their work, Farag et al. also proposed several potential improvements, including the integration of Long Short-Term Memory (LSTM) layers and the use of edge detection during preprocessing. As discussed in \autoref{sec:edge-detection}, edge detection did not yield beneficial results in this context. However, the integration of LSTM layers was implemented to capture temporal patterns in the image sequence. LSTM layers were used in combination with normal convolutional layers, in contrary to using the normal
+    In their work, Farag et al. also proposed several potential improvements, including the integration of Long Short-Term Memory (LSTM) layers and the use of edge detection during preprocessing. As discussed in \autoref{sec:edge-detection}, edge detection did not yield beneficial results in this context. However, the integration of LSTM layers was implemented to capture temporal patterns in the image sequence.
+
+    Both LSTM and convolutional LSTM layers were planned to be experimented on. However, since the \texttt{cuDNN} version installed on the JetBot is not the latest, some CUDA API features that are required to use \texttt{Keras}' \texttt{ConvLSTM2D} with GPU acceleration are not available. For this reason only casual convolutional LSTM layers were utilized to implement the architecture design of the model.
 
     The resulting architecture is illustrated in \autoref{fig:BCNet-LSTM-arch}. To integrate the LSTM component, \texttt{Keras}’s \texttt{TimeDistributed} layers were employed. These layers apply convolutional operations to each frame in the sequence independently, enabling the sequential outputs to be passed collectively to the LSTM block for temporal processing.
 
