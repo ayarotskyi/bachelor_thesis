@@ -1,4 +1,4 @@
-\chapter{Main Chapter}
+\chapter{Behavioral Cloning for Autonomous Driving through the Obstacle Course}
 \label{cha:Main}
 
 \section{Environment Setup}
@@ -224,21 +224,21 @@ The step-by-step description of the data generator is described in the Algorithm
 \subsection{Data Augmentation}
 \label{sec:augmentation}
 
-Data augmentation is a well-established strategy for improving model generalization, especially in cases where collecting large, diverse datasets is infeasible. In the context of time series data, augmentation methods can be particularly impactful due to the sequential dependencies and temporal structures inherent to the data. A comprehensive overview and taxonomy of such techniques are presented in the work by Iglesias et al. \autocite{iglesias2023data}, which categorizes time series augmentation strategies into domain-specific and domain-agnostic methods, including time warping, jittering, permutation, and window slicing, among others.
+Data augmentation is a well-established strategy for improving model generalization, especially in cases where collecting large, diverse datasets is infeasible. In the context of time series data, augmentation methods can be particularly impactful, since transformations applied by them can modify not only spatial, but also temporal structures of the data \autocite{iglesias2023data}.
 
-This work adopts a hybrid augmentation strategy that applies both temporal and visual transformations to the training data. For the temporal component, **time warping** is implemented by dynamically adjusting the maximum allowed frame frequency \( f_{\text{max}} \) for data pairs retrieved from the augmentation buffer. By increasing or decreasing the temporal spacing between frames in a sequence, the generator effectively simulates variations in system response time or actuation speed, thus improving the model's robustness to timing deviations.
+This work adopts a hybrid augmentation strategy that applies both temporal and spacial transformations to the training data. For the temporal component, \textbf{time warping} is implemented by dynamically adjusting the maximum allowed frame frequency \( f_{\text{max}} \) for data pairs retrieved from the augmentation buffer. By increasing or decreasing the time between frames in a sequence, the generator effectively simulates variations in system response time or actuation speed, thus improving the model's robustness to timing deviations.
 
-On the visual side, several spatial transformations are applied to the input images. These transformations are applied probabilistically and independently to each image in the memory stack:
+Spacial transformations are also applied to the augmented input data. They're applied probabilistically and independently to each image in the memory stack:
 
 \begin{itemize}
-  \item \textbf{Gaussian Noise Injection:} Gaussian noise with a random standard deviation \( \sigma \in [0, 0.5] \) is added to simulate sensor noise or varying lighting conditions.
+  \item \textbf{Gaussian Noise Injection (Jittering):} Gaussian noise with a random standard deviation \( \sigma \in [0, 0.5] \) is added to simulate sensor noise or varying lighting conditions.
   \item \textbf{Translation:} The image is randomly shifted along both axes within a maximum offset of 9 pixels, simulating minor misalignments or camera movement.
   \item \textbf{Rotation and Scaling:} A small random rotation (up to \( \pm 5^\circ \)) and scaling (within \( \pm 6\% \)) are applied using affine transformations. This accounts for slight perspective distortions and variations in camera zoom.
 \end{itemize}
 
 The augmentation process is applied during data generation, immediately before yielding the augmented state-label pair. This ensures that transformations are computed on-the-fly and vary across training epochs, further reducing the risk of overfitting.
 
-By combining time series augmentation principles, as outlined in \autocite{iglesias2023data}, with low-level image manipulation techniques, the data generator enhances both temporal and perceptual diversity in the training dataset. This dual-augmentation approach has shown to significantly improve the stability and adaptability of the resulting control model, particularly in environments with noisy inputs or fluctuating timing characteristics.
+By combining time series augmentation principles, as outlined in \autocite{iglesias2023data}, with low-level image manipulation techniques, the data generator enhances both temporal and spacial diversity in the training dataset. This dual-augmentation approach has shown to significantly improve the stability and adaptability of the resulting control model.
 
 \begin{algorithm}[H]
   \caption{Data Generator for Incremental Training with Augmentation}
@@ -278,7 +278,45 @@ By combining time series augmentation principles, as outlined in \autocite{igles
   \label{alg:data_generator}
 \end{algorithm}
 
+\subsection{Training setup}
+
 \subsection{Hyperparameters}
+\label{sec:hyperparameters}
+
+After the identification of the most effective model architecture --- BCNet with LSTM layers (\autoref{fig:BCNet-LSTM-arch}) --- a systematic hyperparameter optimization process was conducted to enhance both training efficiency and experimental performance. For this purpose, the \texttt{Keras Tuner} library was employed. This library offers a scalable and flexible framework for automated hyperparameter search within the \texttt{Keras} framework using strategies such as random search, Hyperband, and Bayesian optimization.
+
+A range of key hyperparameters was explored during the tuning process:
+
+\begin{itemize}
+  \item \textbf{Dropout Rates:} Applied to Dropout layers to mitigate overfitting, with values tested in the range \([0.1, 0.7]\).
+  \item \textbf{Convolutional Kernel Sizes:} Kernel sizes for convolutional layers were tuned to optimize the balance between feature locality and spatial abstraction.
+  \item \textbf{L2 Regularization Factor:} An optimal regularization factor to ensure that the gradient stays within an optimal value range.
+  \item \textbf{Learning Rate:} A critical hyperparameter for optimizer performance, tested across a logarithmic scale (e.g., \(10^{-5}\) to \(10^{-2}\)).
+  \item \textbf{Augmentation Factor:} Controlled the number of augmented samples stored and reused during training, influencing the degree of regularization and data diversity.
+\end{itemize}
+
+Many combinations of hyperparameters were evaluated using validation loss. The tuning process was executed using early stopping and Bayesian optimization to increase the accuracy of the process.
+
+The table below summarizes the final selected hyperparameter values used in the best-performing configuration:
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{|l|c|}
+    \hline
+    \textbf{Hyperparameter} & \textbf{Selected Value} \\
+    \hline
+    Dropout Rate & $0.3$ \\
+    Convolutional Kernel Size & $5$ for the first three layers and $3$ for the rest \\
+    L2 Regularization Factor & $10^{-4}$ \\
+    Learning Rate & $0.00025$ \\
+    Augmentation Factor & $3$ \\
+    \hline
+  \end{tabular}
+  \caption{Final hyperparameter values selected using Keras Tuner}
+  \label{tab:hyperparameters}
+\end{table}
+
+This tuning step significantly improved the convergence behavior and generalization ability of the model, leading to more stable and reliable real-world control performance.
 
 \section{Control Inference Pipeline}
 \label{sec:pipeline}
