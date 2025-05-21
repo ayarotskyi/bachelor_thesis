@@ -126,7 +126,7 @@ Before initiating the training process, the collected data must be pre-processed
 \subsection{Edge Detection}
 \label{sec:edge-detection}
 
-Although the final version of the agent utilizes relatively simple and direct pre-processing steps, a substantial amount of experimentation was conducted to evaluate other more advanced techniques and determine the most effective configuration.
+Although the final version of the control inference system utilizes relatively simple and direct pre-processing steps, a substantial amount of experimentation was conducted to evaluate other more advanced techniques and determine the most effective configuration.
 
 One such technique, proposed as a direction for future work by Farag et al. \autocite{8855753}, is the application of edge detection to input images prior to processing by a Convolutional Neural Network (CNN). The intuition behind this method is that edge detection enhances object boundaries, potentially making it easier for a CNN to extract meaningful features from the input. This, in theory, could simplify the task of identifying obstacles and accelerate the model’s ability to learn complex and task-relevant visual patterns.
 
@@ -347,4 +347,4 @@ This tuning step significantly improved the convergence behavior and generalizat
 \section{Control Inference Pipeline}
 \label{sec:pipeline}
 
-% TODO: remake BCNetLSTM diagram with layer names
+% TODO: remake BCNetLSTM diagram with layer, finish control inference pipeline and evaluation
