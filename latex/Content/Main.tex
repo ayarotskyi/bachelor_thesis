@@ -236,6 +236,17 @@ Spacial transformations are also applied to the augmented input data. They're ap
   \item \textbf{Rotation and Scaling:} A small random rotation (up to \( \pm 5^\circ \)) and scaling (within \( \pm 6\% \)) are applied using affine transformations. This accounts for slight perspective distortions and variations in camera zoom.
 \end{itemize}
 
+\begin{figure}[htbp]
+  \centering
+  \begin{tabu}{cc}
+    \includegraphics[width=0.4\textwidth]{Images/Augmentation/original.png} & \includegraphics[width=0.4\textwidth]{Images/Augmentation/transformed.png} \\
+    \parbox{0.4\textwidth}{\centering (a) Original image.} &
+    \parbox{0.4\textwidth}{\centering (b) Transformed image.}
+  \end{tabu}
+  \caption{Example of an image being transformed in the result of data augmentation.}
+  \label{fig:augmentation_transformations}
+\end{figure}
+
 The augmentation process is applied during data generation, immediately before yielding the augmented state-label pair. This ensures that transformations are computed on-the-fly and vary across training epochs, further reducing the risk of overfitting.
 
 By combining time series augmentation principles, as outlined in \autocite{iglesias2023data}, with low-level image manipulation techniques, the data generator enhances both temporal and spacial diversity in the training dataset. This dual-augmentation approach has shown to significantly improve the stability and adaptability of the resulting control model.
