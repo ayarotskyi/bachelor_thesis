@@ -278,7 +278,22 @@ By combining time series augmentation principles, as outlined in \autocite{igles
   \label{alg:data_generator}
 \end{algorithm}
 
-\subsection{Training setup}
+\subsection{Training Setup}
+\label{sec:trainingsetup}
+
+The training process was carefully configured using a set of well-established deep learning practices to ensure efficient convergence, prevent overfitting, and promote generalization across unseen data.
+
+\paragraph{Optimizer and Loss Function.}
+The model was trained using the Adam optimizer \autocite{kingma2015adam}, a widely adopted method in deep learning due to its ability to adaptively adjust learning rates for each parameter. The objective function minimized during training was the Mean Squared Error (MSE), selected for its suitability in regression tasks, particularly when predicting continuous joystick values within a bounded range.
+
+\paragraph{Activation Functions.}
+For the convolutional layers, the Rectified Linear Unit (ReLU) activation function was used. ReLU is known for its simplicity, non-saturating gradient behavior, and computational efficiency. It has also been shown to facilitate the training of deep networks by addressing the vanishing gradient problem \autocite{DBLP:journals/corr/abs-1803-08375}. For the LSTM layer, the hyperbolic tangent (tanh) activation function was employed. This choice is rooted both in theoretical considerations (tanh is the standard activation function used within LSTM cells \autocite{K20222637}) and practical ones, as the model output is expected to lie within the \([-1, 1]\) range, which tanh naturally supports.
+
+\paragraph{Weight Initialization.}
+Proper weight initialization plays a crucial role in achieving stable and fast convergence in deep networks. The weights of the convolutional layers were initialized using He initialization \autocite{he2015delving}, which is specifically designed for layers with ReLU activation. For the LSTM layers, Glorot initialization \autocite{glorot2010understanding} was applied, as it balances the variance of activations between layers and is generally well-suited for networks using tanh activations.
+
+\paragraph{Overfitting prophilaxis.}
+To mitigate overfitting and improve generalization, $L_2$ \autocite{kukačka2017regularizationdeeplearningtaxonomy} regularization was applied to all trainable layers in the network. In addition, \texttt{EarlyStopping} and \texttt{ReduceLROnPlateau} callbacks provided by the Keras framework were employed. \texttt{EarlyStopping} halts training when no improvement in validation loss is observed over a specified number of epochs, while \texttt{ReduceLROnPlateau} adaptively lowers the learning rate when validation performance plateaus, thus allowing finer convergence without overshooting minima.
 
 \subsection{Hyperparameters}
 \label{sec:hyperparameters}
@@ -308,7 +323,7 @@ The table below summarizes the final selected hyperparameter values used in the 
     Dropout Rate & $0.3$ \\
     Convolutional Kernel Size & $5$ for the first three layers and $3$ for the rest \\
     L2 Regularization Factor & $10^{-4}$ \\
-    Learning Rate & $0.00025$ \\
+    Learning Rate & $2.5 * 10^{-4}$ \\
     Augmentation Factor & $3$ \\
     \hline
   \end{tabular}
@@ -321,4 +336,4 @@ This tuning step significantly improved the convergence behavior and generalizat
 \section{Control Inference Pipeline}
 \label{sec:pipeline}
 
-% TODO: check augmentation, create illustrations for the augmentation and finish hyperparameters
+% TODO: remake BCNetLSTM diagram with layer names
