@@ -304,7 +304,7 @@ For the convolutional layers, the Rectified Linear Unit (ReLU) activation functi
 Proper weight initialization plays a crucial role in achieving stable and fast convergence in deep networks. The weights of the convolutional layers were initialized using He initialization \autocite{he2015delving}, which is specifically designed for layers with ReLU activation. For the LSTM layers, Glorot initialization \autocite{glorot2010understanding} was applied, as it balances the variance of activations between layers and is generally well-suited for networks using tanh activations.
 
 \paragraph{Overfitting prophilaxis.}
-To mitigate overfitting and improve generalization, $L_2$ \autocite{kukačka2017regularizationdeeplearningtaxonomy} regularization was applied to all trainable layers in the network. In addition, \texttt{EarlyStopping} and \texttt{ReduceLROnPlateau} callbacks provided by the Keras framework were employed. \texttt{EarlyStopping} halts training when no improvement in validation loss is observed over a specified number of epochs, while \texttt{ReduceLROnPlateau} adaptively lowers the learning rate when validation performance plateaus, thus allowing finer convergence without overshooting minima.
+To mitigate overfitting and improve generalization, $L_2$ \autocite{kukačka2017regularizationdeeplearningtaxonomy} regularization was applied to all trainable layers in the network. In addition, \texttt{EarlyStopping} and \\ \texttt{ReduceLROnPlateau} callbacks provided by the Keras framework were employed. \texttt{EarlyStopping} halts training when no improvement in validation loss is observed over a specified number of epochs, while \texttt{ReduceLROnPlateau} adaptively lowers the learning rate when validation performance plateaus, thus allowing finer convergence without overshooting minima.
 
 \subsection{Hyperparameters}
 \label{sec:hyperparameters}
@@ -347,4 +347,53 @@ This tuning step significantly improved the convergence behavior and generalizat
 \section{Control Inference Pipeline}
 \label{sec:pipeline}
 
-% TODO: remake BCNetLSTM diagram with layer, finish control inference pipeline and evaluation
+The control inference pipeline is a critical component that enables real-time prediction and execution of motor commands based on video input from the JetBot's camera. The pipeline is designed using a client-server architecture, where the client runs on the JetBot and the server is hosted on an external machine connected via a local network. This structure ensures both responsiveness and the ability to remotely monitor and log inference performance.
+
+\subsection{Client-Side Architecture}
+
+The client-side is deployed directly on the JetBot. To ensure parallel execution of data transmission and inference, two concurrent processes are launched using Python's \texttt{multiprocessing} library:
+
+\begin{itemize}
+  \item \textbf{Sender Process:} This process is responsible for establishing a TCP connection with the server using the \texttt{socket} library. It retrieves binary-encoded frame and prediction data from a \texttt{multiprocessing.Queue} and sends them over the network.
+
+  \item \textbf{Prediction Process:} This process initializes the memory stack and loads the trained model. It also activates the camera stream using the \texttt{jetcam} library. In an infinite loop, it continuously acquires the latest frame from the video buffer, pre-processes it, appends it to the memory stack, and uses the model to predict control signals. The prediction and frame are then serialized into binary format using the \texttt{struct} library and forwarded to the sender process via the shared queue. The predicted control values are finally applied to the JetBot using the API that modifies the motor velocities.
+\end{itemize}
+
+This parallelism allows the JetBot to make and execute decisions while simultaneously transmitting data to the server for monitoring and logging.
+
+\subsection{Server-Side Architecture}
+
+The server-side of the pipeline is hosted on a remote machine connected to the same local network as the JetBot. Upon accepting the TCP connection from the client, the server enters a loop to receive binary data.
+
+Received packets are decoded and passed to a separate storage process that saves the frame and corresponding control signal to disk in a structured directory format. In parallel, the frame is visualized using the \texttt{imshow} function from the \texttt{OpenCV} library. For better interpretability, a green directional line is drawn on each displayed frame, representing the predicted movement direction and velocity.
+
+To depict the intended movement direction of the JetBot, a green line is drawn at the bottom of each frame. This line is calculated based on the predicted control values, and its coordinates reflect both direction and speed. The algorithm used for rendering this directional indicator is shown in Algorithm \ref{alg:draw_line}.
+
+\begin{algorithm}[H]
+  \caption{Draw Predicted Direction Line}
+  \begin{algorithmic}[1]
+    \State \textbf{Input:} Control coordinates $x, y$, Frame dimensions $height, width$
+    \State $(x, y) \gets \text{CalculateMotorInputs}(x, y)$ (see Algorithm \ref{alg:motor_inputs})
+    \State $x_{rotated} \gets 0.5 - y$
+    \State $y_{rotated} \gets x$
+    \State $x_{scaled} \gets x_{rotated} \cdot height$
+    \State $y_{scaled} \gets y_{rotated} \cdot \frac{width}{2}$
+    \State $x_{start} \gets \frac{width}{2}$
+    \State $y_{start} \gets height - 1$
+    \State $point_1 \gets (x_{start}, y_{start})$
+    \State $point_2 \gets (x_{start} - x_{scaled}, y_{start} - y_{scaled})$
+    \State Draw a line from $point_1$ to $point_2$
+  \end{algorithmic}
+  \label{alg:draw_line}
+\end{algorithm}
+
+% \begin{figure}[H]
+%   \centering
+%   \includegraphics[width=0.9\linewidth]{pipeline_diagram.pdf} % Replace with actual file
+%   \caption{Schematic representation of the control inference pipeline including client and server modules.}
+%   \label{fig:pipeline}
+% \end{figure}
+
+The combination of local inference and remote visualization facilitates both autonomous control and efficient debugging or evaluation of the model's performance in real-time environment.
+
+% TODO: remake BCNetLSTM diagram with layer names, finish control inference pipeline and evaluation
