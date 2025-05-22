@@ -221,36 +221,6 @@ If the data generator completes an iteration over all data points within a given
 
 The step-by-step description of the data generator is described in the Algorithm \ref{alg:data_generator}.
 
-\subsection{Data Augmentation}
-\label{sec:augmentation}
-
-Data augmentation is a well-established strategy for improving model generalization, especially in cases where collecting large, diverse datasets is infeasible. In the context of time series data, augmentation methods can be particularly impactful, since transformations applied by them can modify not only spatial, but also temporal structures of the data \autocite{iglesias2023data}.
-
-This work adopts a hybrid augmentation strategy that applies both temporal and spacial transformations to the training data. For the temporal component, \textbf{time warping} is implemented by dynamically adjusting the maximum allowed frame frequency \( f_{\text{max}} \) for data pairs retrieved from the augmentation buffer. By increasing or decreasing the time between frames in a sequence, the generator effectively simulates variations in system response time or actuation speed, thus improving the model's robustness to timing deviations.
-
-Spacial transformations are also applied to the augmented input data. They're applied probabilistically and independently to each image in the memory stack:
-
-\begin{itemize}
-  \item \textbf{Gaussian Noise Injection (Jittering):} Gaussian noise with a random standard deviation \( \sigma \in [0, 0.5] \) is added to simulate sensor noise or varying lighting conditions.
-  \item \textbf{Translation:} The image is randomly shifted along both axes within a maximum offset of 9 pixels, simulating minor misalignments or camera movement.
-  \item \textbf{Rotation and Scaling:} A small random rotation (up to \( \pm 5^\circ \)) and scaling (within \( \pm 6\% \)) are applied using affine transformations. This accounts for slight perspective distortions and variations in camera zoom.
-\end{itemize}
-
-\begin{figure}[htbp]
-  \centering
-  \begin{tabu}{cc}
-    \includegraphics[width=0.4\textwidth]{Images/Augmentation/original.png} & \includegraphics[width=0.4\textwidth]{Images/Augmentation/transformed.png} \\
-    \parbox{0.4\textwidth}{\centering (a) Original image.} &
-    \parbox{0.4\textwidth}{\centering (b) Transformed image.}
-  \end{tabu}
-  \caption{Example of an image being transformed in the result of data augmentation.}
-  \label{fig:augmentation_transformations}
-\end{figure}
-
-The augmentation process is applied during data generation, immediately before yielding the augmented state-label pair. This ensures that transformations are computed on-the-fly and vary across training epochs, further reducing the risk of overfitting.
-
-By combining time series augmentation principles, as outlined in \autocite{iglesias2023data}, with low-level image manipulation techniques, the data generator enhances both temporal and spacial diversity in the training dataset. This dual-augmentation approach has shown to significantly improve the stability and adaptability of the resulting control model.
-
 \begin{algorithm}[H]
   \caption{Data Generator for Incremental Training with Augmentation}
   \begin{algorithmic}[1]
@@ -288,6 +258,36 @@ By combining time series augmentation principles, as outlined in \autocite{igles
   \end{algorithmic}
   \label{alg:data_generator}
 \end{algorithm}
+
+\subsection{Data Augmentation}
+\label{sec:augmentation}
+
+Data augmentation is a well-established strategy for improving model generalization, especially in cases where collecting large, diverse datasets is infeasible. In the context of time series data, augmentation methods can be particularly impactful, since transformations applied by them can modify not only spatial, but also temporal structures of the data \autocite{iglesias2023data}.
+
+This work adopts a hybrid augmentation strategy that applies both temporal and spacial transformations to the training data. For the temporal component, \textbf{time warping} is implemented by dynamically adjusting the maximum allowed frame frequency \( f_{\text{max}} \) for data pairs retrieved from the augmentation buffer. By increasing or decreasing the time between frames in a sequence, the generator effectively simulates variations in system response time or actuation speed, thus improving the model's robustness to timing deviations.
+
+Spacial transformations are also applied to the augmented input data. They're applied probabilistically and independently to each image in the memory stack:
+
+\begin{itemize}
+  \item \textbf{Gaussian Noise Injection (Jittering):} Gaussian noise with a random standard deviation \( \sigma \in [0, 0.5] \) is added to simulate sensor noise or varying lighting conditions.
+  \item \textbf{Translation:} The image is randomly shifted along both axes within a maximum offset of 9 pixels, simulating minor misalignments or camera movement.
+  \item \textbf{Rotation and Scaling:} A small random rotation (up to \( \pm 5^\circ \)) and scaling (within \( \pm 6\% \)) are applied using affine transformations. This accounts for slight perspective distortions and variations in camera zoom.
+\end{itemize}
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tabu}{cc}
+    \includegraphics[width=0.4\textwidth]{Images/Augmentation/original.png} & \includegraphics[width=0.4\textwidth]{Images/Augmentation/transformed.png} \\
+    \parbox{0.4\textwidth}{\centering (a) Original image.} &
+    \parbox{0.4\textwidth}{\centering (b) Transformed image.}
+  \end{tabu}
+  \caption{Example of an image being transformed in the result of data augmentation.}
+  \label{fig:augmentation_transformations}
+\end{figure}
+
+The augmentation process is applied during data generation, immediately before yielding the augmented state-label pair. This ensures that transformations are computed on-the-fly and vary across training epochs, further reducing the risk of overfitting.
+
+By combining time series augmentation principles, as outlined in \autocite{iglesias2023data}, with low-level image manipulation techniques, the data generator enhances both temporal and spacial diversity in the training dataset. This dual-augmentation approach has shown to significantly improve the stability and adaptability of the resulting control model.
 
 \subsection{Training Setup}
 \label{sec:trainingsetup}
@@ -369,6 +369,13 @@ Received packets are decoded and passed to a separate storage process that saves
 
 To depict the intended movement direction of the JetBot, a green line is drawn at the bottom of each frame. This line is calculated based on the predicted control values, and its coordinates reflect both direction and speed. The algorithm used for rendering this directional indicator is shown in Algorithm \ref{alg:draw_line}.
 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1.0\linewidth]{Images/control_inference_pipeline.png}
+  \caption{Timing diagram of the control inference pipeline including client and server modules.}
+  \label{fig:pipeline}
+\end{figure}
+
 \begin{algorithm}[H]
   \caption{Draw Predicted Direction Line}
   \begin{algorithmic}[1]
@@ -386,13 +393,6 @@ To depict the intended movement direction of the JetBot, a green line is drawn a
   \end{algorithmic}
   \label{alg:draw_line}
 \end{algorithm}
-
-% \begin{figure}[H]
-%   \centering
-%   \includegraphics[width=0.9\linewidth]{pipeline_diagram.pdf} % Replace with actual file
-%   \caption{Schematic representation of the control inference pipeline including client and server modules.}
-%   \label{fig:pipeline}
-% \end{figure}
 
 The combination of local inference and remote visualization facilitates both autonomous control and efficient debugging or evaluation of the model's performance in real-time environment.
 
