@@ -189,12 +189,12 @@ To identify the most suitable model architecture for the task, various configura
 
     Both LSTM and convolutional LSTM layers were planned to be experimented on. However, since the \texttt{cuDNN} version installed on the JetBot is not the latest, some CUDA API features that are required to use \texttt{Keras}’s \texttt{ConvLSTM2D} with GPU acceleration are not available. For this reason only casual convolutional LSTM layers were utilized to implement the architecture design of the model.
 
-    The resulting architecture is illustrated in \autoref{fig:BCNet-LSTM-arch}. To integrate the LSTM component, \texttt{Keras}’s \texttt{TimeDistributed} layers were employed. These layers apply convolutional operations to each frame in the sequence independently, enabling the sequential outputs to be passed collectively to the LSTM block for temporal processing.
+    The resulting architecture is illustrated in \autoref{fig:BCNet-LSTM-arch}. To integrate the LSTM component, \texttt{Keras}’s \texttt{TimeDistributed} layers were employed. These layers act as wrappers to other layers and apply the operations of the underlying layers to each frame in the sequence independently, enabling the sequential outputs to be passed collectively to the LSTM block for temporal processing.
 
     \begin{figure}[htbp]
       \centering
       \includegraphics[width=1.0\textwidth]{Images/BCNetLSTM_architecture.png}
-      \caption{BCNet with LSTM layers. The \texttt{TimeDistributed} layers represent convolutional, flattening, and dropout operations across the sequence.}
+      \caption{Architecture diagram of BCNet with LSTM layers.}
       \label{fig:BCNet-LSTM-arch}
     \end{figure}
 \end{enumerate}
