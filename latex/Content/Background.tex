@@ -204,8 +204,10 @@ Covariate shift is particularly problematic in deep neural networks, where many 
 
 Batch Normalization (BatchNorm) \autocite{ioffe2015batch} is a technique introduced to stabilize and accelerate the training of deep neural networks by normalizing the output of each layer across the samples in a mini-batch. Simple normalization of the output may lead to the loss of the representational abilities of the activation function in the next layer (e.g. the sigmoid function loses it's nonlinearity, since normalization of the inputs will force them to be in the part of the domain that makes it work in the linear regime). BatchNorm introduces a dedicated nonlinear transformation—referred to as the “BN” layer—into the network architecture. For a layer with $d$-dimensional input $x = (x^{(1)}...x^{(d)})$, a simple normalization would look like this:
 \[
-  \hat{x}^{(k)} = \frac{x^{(k)} - \mu_B}{\sqrt{Var[x^{(k)}]}}
+  \hat{x}^{(k)} = \frac{x^{(k)} - \mu_B}{\sqrt{Var[x^{(k)}]}},
 \]
+with $\mu_B$ being the the mean of the mini-batch.
+
 Although this technique has been proven to successfully increase the convergence speed, the above mentioned flaws of simple normalization still remain. Thus, Ioffe et al. \autocite{ioffe2015batch} address this problem by introducing 2 new trainable parameters for each activation $x^{(k)}$: $\gamma^{(k)}$ and $\beta^{(k)}$. They help mitigate the restrictions of simple normalization by shifting and scaling the normalized value:
 \[
   y^{(k)} = \gamma^{(k)} \hat{x}^{(k)} + \beta^{(k)}
