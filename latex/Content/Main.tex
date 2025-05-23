@@ -199,6 +199,12 @@ To identify the most suitable model architecture for the task, various configura
     \end{figure}
 \end{enumerate}
 
+During the development of this thesis, several alternative Deep Neural Network (DNN) architectures were explored in addition to the final BCNet model. Among the investigated approaches were three-dimensional convolutional neural networks (3D CNNs), which are capable of capturing spatiotemporal features across consecutive frames by applying convolutions in both spatial and temporal dimensions. These networks are often used in video analysis tasks due to their ability to model dynamic motion patterns more explicitly.
+
+Another class of models that was examined includes quantized neural networks (QNNs), which aim to reduce the computational and memory footprint of deep models by constraining weights and activations to lower-precision values, such as 8-bit integers. QNNs are particularly attractive for deployment on resource-constrained edge devices, such as the JetBot.
+
+Although both 3D CNNs and QNNs demonstrated theoretical promise, they did not outperform the selected architecture in terms of prediction accuracy, stability, and real-time feasibility. However, the insights gained from experimenting with these architectures helped inform key design decisions and emphasized the importance of balancing model complexity with computational efficiency.
+
 \section{Training Process}
 
 The training process for the models involves multiple stages, including data preprocessing, dynamic batching, augmentation, and iterative refinement of model hyperparameters. Due to the constraints of hardware resources, the training pipeline must be both efficient and robust. One of the main components enabling this is the data generator, which is responsible for assembling input sequences and labels on the fly, thereby allowing for large-scale training without exceeding system memory limits.
@@ -395,5 +401,3 @@ To depict the intended movement direction of the JetBot, a green line is drawn a
 \end{algorithm}
 
 The combination of local inference and remote visualization facilitates both autonomous control and efficient debugging or evaluation of the model's performance in real-time environment.
-
-% TODO: remake BCNetLSTM diagram with layer names, finish control inference pipeline and evaluation
