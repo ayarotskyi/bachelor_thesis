@@ -14,7 +14,7 @@ Addressing the main research questions:
   \item \textbf{Can the model be sufficiently generalized using behavioral cloning to demonstrate human performance or even surpass it in the second difficulty?} \\
     Unfortunately, the success rate of the BCNet-driven JetBot was 0\% under the conditions of the second difficulty level. This clearly indicates that the model failed to generalize to spatial variations it had not encountered during training. This limitation is a well-known challenge in behavioral cloning (BC) \autoref{NIPS1988_812b4ba2}. Since BC relies heavily on supervised learning from expert trajectories, it tends to perform poorly when encountering states that lie outside of the training distribution. The lack of corrective feedback during training means the model is ill-equipped to recover from novel or slightly off-distribution states, especially in tasks involving obstacle avoidance from unfamiliar angles or trajectories.
 
-  \item \textbf{Can the Inverse Reinforcement Learning (IRL) approach eliminate the expected weaknesses of the Behavioral Cloning approach in mastering the course on both difficulty levels and contribute to successfully mastering the course?} \\
+  \item \textbf{Can the Inverse Reinforcement Learning (IRL) approach eliminate the expected weaknesses of the Behavioral Cloning approach in mastering the course on both difficulty levels?} \\
     As this thesis did not provide an opportunity to explore this question empirically, potential solutions will be discussed in \autoref{sec:future_work}.
 \end{enumerate}
 
