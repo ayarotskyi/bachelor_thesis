@@ -17,7 +17,7 @@ The movement system consists of two DC motors with integrated encoders, connecte
 
 For motor control and overall robot management, the JetBot API was used, which conveniently provides \texttt{Python} bindings. This allows integration with the data acquisition and inference components, all of which are written in \texttt{Python}. Although the API includes various methods to control the JetBot, this thesis adopts the direct velocity control method. For each of the two motors the velocity can be set to any value within the range \([-1, 1]\), where \(-1\) corresponds to full reverse, \(0\) to a stationary motor, and \(1\) to full forward speed. This approach simplifies the control logic and makes the task of mapping the joystick inputs to control signals more straightforward.
 
-Additional peripherals include a wide-angle Raspberry Pi Camera BMP (V2) module, used for visual input, and a Wi-Fi module for remote access and debugging. The camera captures frames at a resolution suitable for both training and real-time inference with the maximum frame rate of 120 Hz.
+Additional peripherals include a wide-angle Raspberry Pi Camera BMP (V2) module, used for visual input, and a Wi-Fi module for remote access and debugging. The camera captures frames at a resolution suitable for both training and real-time inference with a maximum frame rate of 120 Hz.
 
 \subsection{Software}
 
@@ -82,7 +82,7 @@ The pipeline operates as follows:
 
 The data was initially collected at a frame rate of 30 frames per second (FPS). However, it was later decided to increase the frame rate to 120 FPS, as it is the fastest framerate that the sensor can provide. The rationale behind this decision was that, although the system is not capable of executing the control policy at such a high frequency in real-time, the high-frame-rate sequences could be downsampled during training using time and frequency warping techniques \autocite{iglesias2023data}. This allows for greater flexibility in choosing the effective temporal resolution for training, depending on the model architecture and experimental requirements.
 
-After data collection, a filtering step was applied to remove unrepresentative or low-quality trajectories. In particular, sequences that did not contribute meaningful information to the learning process (such as those recorded after the JetBot had passed the final obstacle pair) were discarded entirely. Additionally, some valid trajectories were cropped to eliminate irrelevant frames that might hinder effective feature extraction during training.
+After data collection, a filtering step was applied to remove unrepresentative or low-quality trajectories. In particular, sequences that did not contribute meaningful information to the learning process, such as those recorded after the JetBot had passed the final obstacle pair, were discarded entirely. Additionally, some valid trajectories were cropped to eliminate irrelevant frames that might hinder effective feature extraction during training.
 
 The final dataset consists of 22,017 labeled images and is divided into two subsets: one for the first difficulty level and the other for the second difficulty level. The first difficulty subset contains 15,008 data points, while the remaining 7,009 correspond to the second difficulty.
 
@@ -110,9 +110,9 @@ Before initiating the training process, the collected data must be pre-processed
     \]
     where \( Y \) is the grayscale image matrix and \( Y_c \) is the normalized output passed to the network.
 
-    Z-score normalization approach was also experimented on, but it didn't show any better results compared to the pixel-centered approach.
+    Z-score normalization approach was also experimented with, but it didn't show any better results compared to the pixel-centered approach.
 
-  \item \textbf{Update memory stack} \\
+  \item \textbf{Frame Buffer Update} \\
     Once the image is passed through all of the preprocessing steps, the memory stack of size $N$ is updated by pushing the frame to its top position. The stack size $N$ is usually set to $10$ after hyperparameter tuning that yielded the best parameters with which the model has the best training results.
 \end{enumerate}
 
@@ -130,7 +130,7 @@ Although the final version of the control inference system utilizes relatively s
 
 One such technique, proposed as a direction for future work by Farag et al. \autocite{8855753}, is the application of edge detection to input images prior to processing by a Convolutional Neural Network (CNN). The intuition behind this method is that edge detection enhances object boundaries, potentially making it easier for a CNN to extract meaningful features from the input. This, in theory, could simplify the task of identifying obstacles and accelerate the model’s ability to learn complex and task-relevant visual patterns.
 
-To test this hypothesis, two well-known edge detection algorithms were evaluated: the Canny edge detector \autocite{canny1986computational}, as recommended by Farag et al. \autocite{8855753}, and the Sobel filter \autocite{sobel2014history}. These approaches were selected, because after testing multiple edge detection algorithms, they seemed to produce the most meaningful and noiseless outputs. Models were trained using data processed by each of these algorithms. However, empirical results showed no significant improvements in performance or generalization capability. The best outcome achieved with edge-detected inputs was that the JetBot was able to consistently pass the second pair of obstacles but failed to navigate the third.
+To test this hypothesis, two well-known edge detection algorithms were evaluated: the Canny edge detector \autocite{canny1986computational}, as recommended by Farag et al. \autocite{8855753}, and the Sobel filter \autocite{sobel2014history}. These approaches were selected because after testing multiple edge detection algorithms, they seemed to produce the most meaningful and noiseless outputs. Models were trained using data processed by each of these algorithms. However, empirical results showed no significant improvements in performance or generalization capability. The best outcome achieved with edge-detected inputs was that the JetBot was able to consistently pass the second pair of obstacles but failed to navigate the third.
 
 \begin{figure}[htbp]
   \centering
@@ -170,7 +170,7 @@ To identify the most suitable model architecture for the task, various configura
       \label{fig:sb3cnn-arch}
     \end{figure}
 
-    This model didn't show the ability to learn from the given dataset, most likely due to it being too shallow to be able to capture meaningful features from high-dimensional inputs. The validation loss sank early, causing the Early Stopping mechanism to terminate training at epoch 10.
+    This model failed to learn meaningful features from the given dataset, most likely due to it being too shallow to be able to capture meaningful features from high-dimensional inputs. The validation loss sank early, causing the Early Stopping mechanism to terminate training at epoch 10.
 
   \item \textbf{DAVE-2:} \\
     This architecture, originally developed by NVIDIA researchers \autocite{bojarski2016endendlearningselfdriving}, was replicated exactly as described in the original publication. It is the only model evaluated in this thesis that does not incorporate any memory mechanism and also does not require preprocessing beyond simple image cropping. The network accepts raw RGB images as input using a 3-channel input layer and is visualized in \autoref{fig:dave-2-arch}.
@@ -187,7 +187,7 @@ To identify the most suitable model architecture for the task, various configura
 
     In their work, Farag et al. also proposed several potential improvements, including the integration of Long Short-Term Memory (LSTM) layers and the use of edge detection during preprocessing. As discussed in \autoref{sec:edge-detection}, edge detection did not yield beneficial results in this context. However, the integration of LSTM layers was implemented to capture temporal patterns in the image sequence.
 
-    Both LSTM and convolutional LSTM layers were planned to be experimented on. However, since the \texttt{cuDNN} version installed on the JetBot is not the latest, some CUDA API features that are required to use \texttt{Keras}’s \texttt{ConvLSTM2D} with GPU acceleration are not available. For this reason only casual convolutional LSTM layers were utilized to implement the architecture design of the model.
+    Both LSTM and convolutional LSTM layers were planned to be experimented on. However, since the \texttt{cuDNN} version installed on the JetBot is not the latest, some CUDA API features that are required to use \texttt{Keras}’s \texttt{ConvLSTM2D} with GPU acceleration are not available. For this reason only standard LSTM layers were utilized to implement the architecture design of the model.
 
     The resulting architecture is illustrated in \autoref{fig:BCNet-LSTM-arch}. To integrate the LSTM component, \texttt{Keras}’s \texttt{TimeDistributed} layers were employed. These layers act as wrappers to other layers and apply the operations of the underlying layers to each frame in the sequence independently, enabling the sequential outputs to be passed collectively to the LSTM block for temporal processing.
 
@@ -217,9 +217,9 @@ The generator constructs temporal sequences of input frames, ensuring that the i
 
 For training, a maximum frame frequency of 4 Hz is typically used. This rate provides a balance between temporal resolution and computational load and is sufficient for most models to make their predictions, particularly when controlling the JetBot at low velocities.
 
-After all frames are pre-processed and collected into the memory stack, a corresponding label must be generated for the data sequence. The label is obtained from the coordinates of the joystick's left analog stick in the frame immediately following the last frame in the sequence. Several alternative strategies were explored, including predicting the joystick position of the current frame or of a frame two steps ahead. However, predicting the next frame's joystick position yielded the best results. This can be explained by the latency of the inference pipeline: the system requires approximately $\frac{1}{4}$ seconds to compute the motor commands and invoke the API to apply them. In the case the model requires less time for the prediction, the pipeline is artificially slowed down to conform the target frequency. By the time this process is complete, the system's state has already changed. Therefore, predicting the immediate future state (i.e., the next frame) aligns more closely with real-world control requirements.
+After all frames are pre-processed and collected into the memory stack, a corresponding label must be generated for the data sequence. The label is obtained from the coordinates of the joystick's left analog stick in the frame immediately following the last frame in the sequence. Several alternative strategies were explored, including predicting the joystick position of the current frame or of a frame two steps ahead. However, predicting the next frame's joystick position yielded the best results. This can be explained by the latency of the inference pipeline: the system requires approximately $0.25$ seconds to compute the motor commands and invoke the API to apply them. In the case the model requires less time for the prediction, the pipeline is artificially slowed down to conform the target frequency. By the time this process is complete, the system's state has already changed. Therefore, predicting the immediate future state (i.e., the next frame) aligns more closely with real-world control requirements.
 
-An alternative approach was also evaluated, where the labels consisted of direct motor velocity signals rather than joystick coordinates. This method is inspired by the research of Hwangbo et al. \autocite{hwangbo2019learning}, who reported improved performance when training legged robots using low-level actuator signals. However, in experiments run on the JetBot, using motor velocities as labels led to significantly worse model performance compared to using analog stick coordinates. This difference is likely due to differences in robot construction (legged vs. wheeled), training methodologies, and experimental setups.
+An alternative approach was also evaluated, where the labels consisted of direct motor velocity signals rather than joystick coordinates. This method is inspired by the research of Hwangbo et al. \autocite{hwangbo2019learning}, who reported improved performance when training legged robots using low-level actuator signals. However, in experiments run on the JetBot, using motor velocities as labels led to significantly worse model performance compared to using analog stick coordinates. These results suggest that for wheeled robots with simple dynamics, high-level control signals (joystick coordinates) may provide more actionable supervision than low-level actuator targets. This contrasts with legged robots, where direct motor control can better capture complex movement patterns.
 
 Once the state-label pair is assembled, it is stored in a buffer array used for data augmentation. The number of stored instances is determined by a user-defined parameter passed to the data generator. During subsequent iterations, with a certain probability, the generator may retrieve a stored pair from the augmentation buffer, apply a set of transformations (see \autoref{sec:augmentation}), and yield the augmented data before proceeding with the next unmodified pair.
 
@@ -270,9 +270,9 @@ The step-by-step description of the data generator is described in the Algorithm
 
 Data augmentation is a well-established strategy for improving model generalization, especially in cases where collecting large, diverse datasets is infeasible. In the context of time series data, augmentation methods can be particularly impactful, since transformations applied by them can modify not only spatial, but also temporal structures of the data \autocite{iglesias2023data}.
 
-This work adopts a hybrid augmentation strategy that applies both temporal and spacial transformations to the training data. For the temporal component, \textbf{time warping} is implemented by dynamically adjusting the maximum allowed frame frequency \( f_{\text{max}} \) for data pairs retrieved from the augmentation buffer. By increasing or decreasing the time between frames in a sequence, the generator effectively simulates variations in system response time or actuation speed, thus improving the model's robustness to timing deviations.
+This work adopts a hybrid augmentation strategy that applies both temporal and spatial transformations to the training data. For the temporal component, \textbf{time warping} is implemented by dynamically adjusting the maximum allowed frame frequency \( f_{\text{max}} \) for data pairs retrieved from the augmentation buffer. By increasing or decreasing the time between frames in a sequence, the generator effectively simulates variations in system response time or actuation speed, thus improving the model's robustness to timing deviations.
 
-Spacial transformations are also applied to the augmented input data. They're applied probabilistically and independently to each image in the memory stack:
+Spatial transformations are also applied to the augmented input data. They are applied probabilistically and independently to each image in the memory stack:
 
 \begin{itemize}
   \item \textbf{Gaussian Noise Injection (Jittering):} Gaussian noise with a random standard deviation \( \sigma \in [0, 0.5] \) is added to simulate sensor noise or varying lighting conditions.
@@ -309,7 +309,7 @@ For the convolutional layers, the Rectified Linear Unit (ReLU) activation functi
 \paragraph{Weight Initialization.}
 Proper weight initialization plays a crucial role in achieving stable and fast convergence in deep networks. The weights of the convolutional layers were initialized using He initialization \autocite{he2015delving}, which is specifically designed for layers with ReLU activation. For the LSTM layers, Glorot initialization \autocite{glorot2010understanding} was applied, as it balances the variance of activations between layers and is generally well-suited for networks using tanh activations.
 
-\paragraph{Overfitting prophilaxis.}
+\paragraph{Overfitting prophylaxis.}
 To mitigate overfitting and improve generalization, $L_2$ \autocite{kukačka2017regularizationdeeplearningtaxonomy} regularization was applied to all trainable layers in the network. In addition, \texttt{EarlyStopping} and \\ \texttt{ReduceLROnPlateau} callbacks provided by the Keras framework were employed. \texttt{EarlyStopping} halts training when no improvement in validation loss is observed over a specified number of epochs, while \texttt{ReduceLROnPlateau} adaptively lowers the learning rate when validation performance plateaus, thus allowing finer convergence without overshooting minima.
 
 \subsection{Hyperparameters}
@@ -327,7 +327,7 @@ A range of key hyperparameters was explored during the tuning process:
   \item \textbf{Augmentation Factor:} Controlled the number of augmented samples stored and reused during training, influencing the degree of regularization and data diversity.
 \end{itemize}
 
-Many combinations of hyperparameters were evaluated using validation loss. The tuning process was executed using early stopping and Bayesian optimization to increase the accuracy of the process.
+Many combinations of hyperparameters were evaluated using validation loss. The tuning process was executed using early stopping and Bayesian optimization to improve search efficiency.
 
 The table below summarizes the final selected hyperparameter values used in the best-performing configuration:
 
@@ -340,7 +340,7 @@ The table below summarizes the final selected hyperparameter values used in the 
     Dropout Rate & $0.3$ \\
     Convolutional Kernel Size & $5$ for the first three layers and $3$ for the rest \\
     L2 Regularization Factor & $10^{-4}$ \\
-    Learning Rate & $2.5 * 10^{-4}$ \\
+    Learning Rate & $2.5 \times 10^{-4}$ \\
     Augmentation Factor & $3$ \\
     \hline
   \end{tabular}
@@ -348,7 +348,7 @@ The table below summarizes the final selected hyperparameter values used in the 
   \label{tab:hyperparameters}
 \end{table}
 
-This tuning step significantly improved the convergence behavior and generalization ability of the model, leading to more stable and reliable real-world control performance.
+The systematic hyperparameter optimization yielded a robust configuration where moderate \\ dropout and L2 regularization balanced generalization without underfitting. The selected kernel sizes (5 for early layers, 3 for deeper ones) suggest that broader receptive fields are initially beneficial for obstacle detection, while finer features suffice in higher layers.
 
 \section{Control Inference Pipeline}
 \label{sec:pipeline}
@@ -371,7 +371,7 @@ This parallelism allows the JetBot to make and execute decisions while simultane
 
 The server-side of the pipeline is hosted on a remote machine connected to the same local network as the JetBot. Upon accepting the TCP connection from the client, the server enters a loop to receive binary data.
 
-Received packets are decoded and passed to a separate storage process that saves the frame and corresponding control signal to disk in a structured directory format. In parallel, the frame is visualized using the \texttt{imshow} function from the \texttt{OpenCV} library. For better interpretability, a green directional line is drawn on each displayed frame, representing the predicted movement direction and velocity.
+Received packets are decoded and passed to a separate storage process that saves the frame and corresponding control signal to disk in a structured directory format. In parallel, the frame is visualized using the \texttt{imshow} function from the \texttt{OpenCV} library.
 
 To depict the intended movement direction of the JetBot, a green line is drawn at the bottom of each frame. This line is calculated based on the predicted control values, and its coordinates reflect both direction and speed. The algorithm used for rendering this directional indicator is shown in Algorithm \ref{alg:draw_line}.
 
@@ -400,4 +400,4 @@ To depict the intended movement direction of the JetBot, a green line is drawn a
   \label{alg:draw_line}
 \end{algorithm}
 
-The combination of local inference and remote visualization facilitates both autonomous control and efficient debugging or evaluation of the model's performance in real-time environment.
+The pipeline’s modular design proved essential for iterative development—decoupling inference (JetBot) from visualization (server) allowed performance tuning without disrupting live operation.

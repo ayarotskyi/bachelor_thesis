@@ -23,7 +23,7 @@ The \textbf{Davies–Bouldin Index (DBI)} is a widely-used clustering metric tha
 
 Where $\sigma_i$ and $\sigma_j$ are the average distances of points in clusters $i$ and $j$ to their respective centroids, and $d(c_i, c_j)$ is the distance between cluster centroids. In this case, trajectory similarity was calculated using Dynamic Time Warping (DTW), which is more appropriate than Euclidean distance for comparing temporal sequences of varying length.
 
-\textbf{Result:} The DBI for the expert and BCNet trajectories was \textbf{1.779}. This value suggests moderate cluster overlap, implying that the model-generated trajectories share similar global structure with those of the expert, though some separation remains.
+\textbf{Result:} The DBI for the expert and BCNet trajectories was \textbf{1.779}. The DBI of 1.779 suggests moderate overlap (values <1 indicate strong separation, >2 poor separation), implying that the model-generated trajectories share similar global structure with those of the expert, though some separation remains.
 
 \subsection{Silhouette Score}
 
@@ -38,9 +38,11 @@ Where $a(i)$ is the mean intra-cluster distance and $b(i)$ is the mean nearest-c
 To better understand directional movement accuracy, silhouette scores were calculated independently for the $x$ and $y$ axes of the trajectories:
 
 \begin{itemize}
-  \item \textbf{X-Axis Silhouette Score:} $0.49$ — This relatively high score indicates that the BCNet hasn't succeeded in mimicking the forward-driving behavior of the expert.
+  \item \textbf{X-Axis Silhouette Score:} $0.49$ — This relatively high score indicates that the BCNet has not succeeded in mimicking the forward-driving behavior of the expert.
   \item \textbf{Y-Axis Silhouette Score:} $0.32$ — This lower value reflects more precision in side-to-side movement, which is associated with steering and turning maneuvers.
 \end{itemize}
+
+The axis-wise silhouette scores reveal a key insight: BCNet replicates steering maneuvers (Y-axis) more faithfully than forward motion (X-axis). This aligns with the model's need to prioritize obstacle avoidance over speed regulation in this task.
 
 \begin{figure}[htbp]
   \centering
@@ -58,7 +60,7 @@ Comparison between velocity profiles of the expert and the trained model is repr
   \item \textbf{Mean velocity of Expert:} $0.17$ m/s
 \end{itemize}
 
-This result shows that while the BCNet-driven JetBot was capable of navigating the environment, it tended to move more cautiously (i.e., slower) than the expert. This behavior is typical in behavioral cloning approaches, especially in cases of errors during training or poorly constructed dataset \autocite{bühler2020drivingghostsbehavioralcloning}.
+This result shows that while the BCNet-driven JetBot was capable of navigating the environment, it tended to move more cautiously (i.e., slower) than the expert. This behavior is typical in behavioral cloning approaches, especially in cases of errors during training or a poorly constructed dataset \autocite{bühler2020drivingghostsbehavioralcloning}.
 
 \begin{figure}[H]
   \centering

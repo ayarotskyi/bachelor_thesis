@@ -22,7 +22,7 @@ An activation function is typically expected to exhibit two key mathematical pro
 \end{enumerate}
 
 \begin{definition}
-  \textit{Deep supervised learning} \autocite{alzubaidi2021review} \autocite{cun2015deeplearning} \autocite{oshea2015introductionconvolutionalneuralnetworks} is a machine learning approach that relies on labeled data to train deep neural networks. Let \(D_t\), denote the training dataset, where each example \((x_t, y_t) \in D_t\) consists of an input datapoint \(x_t\) and its corresponding output label \(y_t\). A function \(f\), typically represented by an artificial neural network (ANN), is learned to map inputs to outputs. The discrepancy between the predicted output \(f(x_t)\) and the true output \(y_t\) is quantified using a loss function \(\gamma\), yielding a loss value \(\gamma(y_t, f(x_t))\). Optimization techniques such as Gradient Descent are then used to iteratively update the network’s parameters in order to minimize the loss, thereby improving the model’s accuracy in approximating the target function.
+  \textit{Deep supervised learning} \autocite{alzubaidi2021review} \autocite{cun2015deeplearning} \autocite{oshea2015introductionconvolutionalneuralnetworks} is a machine learning approach that relies on labeled data to train deep neural networks. Let \(D_t\) denote the training dataset, where each example \((x_t, y_t) \in D_t\) consists of an input datapoint \(x_t\) and its corresponding output label \(y_t\). A function \(f\), typically represented by an artificial neural network (ANN), is learned to map inputs to outputs. The discrepancy between the predicted output \(f(x_t)\) and the true output \(y_t\) is quantified using a loss function \(\gamma\), yielding a loss value \(\gamma(y_t, f(x_t))\). Optimization techniques such as Gradient Descent are then used to iteratively update the network’s parameters in order to minimize the loss, thereby improving the model’s accuracy in approximating the target function.
 \end{definition}
 
 \section{Convolutional Neural Networks}
@@ -56,12 +56,12 @@ Convolutional Neural Networks (CNNs) are among the most widely used and powerful
   \textbf{Sub-sampling layers}, also known as pooling layers, are used to progressively reduce the spatial dimensions of the feature maps. This helps decrease the computational complexity, control overfitting, and enhance the model’s invariance to small translations in the input. Common pooling operations include max pooling and average pooling, where the most prominent or average feature within a local region is retained. It's generally advised to use kernel size of 3 or less in pooling layers, due to their destructive nature and high chance of losing meaningful features.
 \end{definition}
 
-The concept of CNNs was inspired by Time-Delay Neural Networks, where weights are shared through time dimension. In CNNs weights are compacted into it's kernels. This architectural property vastly reduces the number of parameters and complexity of the network compared to Fully Connected Networks. CNNs are valued for their ability to learn to identify features without human interaction and for their empirically proven performance in processing multidimensional data with grid-like topology, like images and videos.
+The concept of CNNs was inspired by Time-Delay Neural Networks, where weights are shared through time dimension. In CNNs weights are compacted into its kernels. This architectural property vastly reduces the number of parameters and complexity of the network compared to Fully Connected Networks. CNNs are valued for their ability to learn to identify features without human interaction and for their empirically proven performance in processing multidimensional data with grid-like topology, like images and videos.
 
 \section{Regularization}
 
 \begin{definition}
-  \textbf{Overfitting} \autocite{oshea2015introductionconvolutionalneuralnetworks} occurs when a model learns the details and noise in the training data to the extent that it negatively impacts the model’s performance on new, unseen data. This results in a model that has high accuracy on the training set but poor generalization to test data. Usually overfitting is indicated by model's performance on training dataset being much better then on test dataset \autocite{9944190}.
+  \textbf{Overfitting} \autocite{oshea2015introductionconvolutionalneuralnetworks} occurs when a model learns the details and noise in the training data to the extent that it negatively impacts the model’s performance on new, unseen data. This results in a model that has high accuracy on the training set but poor generalization to test data. Usually overfitting is indicated by model's performance on training dataset being much better than on test dataset \autocite{9944190}.
 \end{definition}
 
 Convolutional Neural Networks, despite their powerful feature extraction capabilities, are highly prone to overfitting (especially when trained on limited or imbalanced datasets) \autocite{alzubaidi2021review}. This is largely due to their large number of learnable parameters, which can easily adapt to noise in the training data. Regularization techniques are therefore essential to improve generalization and ensure that the model performs well on unseen data. Common methods include dropout, weight decay (L2 regularization), data augmentation, and early stopping. These techniques help constrain the learning process, reduce model complexity, and encourage the network to learn more robust and transferable features.
@@ -71,7 +71,7 @@ Convolutional Neural Networks, despite their powerful feature extraction capabil
 
   \item \textbf{Data Augmentation:} \autocite{10.1145/3510413} Increases the size and diversity of the training dataset by applying transformations such as rotation, scaling, or flipping. This helps prevent overfitting and improves the model's ability to generalize.
 
-  \item \textbf{Batch Normalization:} \autocite{NEURIPS2018_36072923} \autocite{10.1145/3510413} Normalizes layer outputs to have zero mean and unit variance. It reduces internal covariate shift, stabilizes training, and speeds up convergence by maintaining consistent activation distributions across training epochs. This normalization is applied to mini-batches during training and is often followed by a learnable scaling and shifting operation. By mitigating the shifting distributions of intermediate activations, Batch Normalization allows for higher learning rates, reduces sensitivity to initialization, and can also act as a form of regularization, sometimes reducing the need for dropout. The Batch Normalization layer and it's internal structure are described in depth in \autoref{subsec:normalization}.
+  \item \textbf{Batch Normalization:} \autocite{NEURIPS2018_36072923} \autocite{10.1145/3510413} Normalizes layer outputs to have zero mean and unit variance. It reduces internal covariate shift, stabilizes training, and speeds up convergence by maintaining consistent activation distributions across training epochs. This normalization is applied to mini-batches during training and is often followed by a learnable scaling and shifting operation. By mitigating the shifting distributions of intermediate activations, Batch Normalization allows for higher learning rates, reduces sensitivity to initialization, and can also act as a form of regularization, sometimes reducing the need for dropout. The Batch Normalization layer and its internal structure are described in depth in \autoref{subsec:normalization}.
 
   \item \textbf{L1 and L2 Regularization:} \autocite{kukačka2017regularizationdeeplearningtaxonomy} These techniques add a penalty term to the loss function to discourage large weights and reduce the complexity of the model. L1 regularization (lasso) promotes sparsity by adding the absolute values of weights, and is represented by the term:
     \[
@@ -111,7 +111,7 @@ There are 3 variants of Gradient Descent: \autocite{ruder2017overviewgradientdes
         \EndFor
       \end{algorithmic}
     \end{algorithm}
-  \item \textit{Stochastic Gradient Descent (SGD)} calculates gradient and performs parameter update for each datapoint in the dataset. SGD is usually much faster and can be used in an online learning. But performing frequent updates with high variance usually leads to fluctuations in the objective function. These fluctuations usually help SGD find potentially more effective local minima in comparison to Batch Gradient Descent.
+  \item \textit{Stochastic Gradient Descent (SGD)} calculates gradient and performs parameter update for each datapoint in the dataset. SGD is usually much faster and can be used in online learning. But performing frequent updates with high variance usually leads to fluctuations in the objective function. These fluctuations usually help SGD find potentially more effective local minima in comparison to Batch Gradient Descent.
     \begin{algorithm}
       \caption{Stochastic Gradient Descent (SGD)}
       \begin{algorithmic}[1]
@@ -126,7 +126,7 @@ There are 3 variants of Gradient Descent: \autocite{ruder2017overviewgradientdes
         \EndFor
       \end{algorithmic}
     \end{algorithm}
-  \item \textit{Mini-Batch Gradient Descent} splits the data into mini-batches and calculates the gradient and updates the parameters for each batch separately. This way, it is able to reduce variance of parameter updates and take advantage of fast matrix operations that can be performed for the whole mini-batch at a time on modern Graphics Processing Units (GPUs).
+  \item \textit{Mini-Batch Gradient Descent} splits the data into mini-batches and calculates the gradient and updates the parameters for each batch separately. This way, it is able to reduce the variance of parameter updates and take advantage of fast matrix operations that can be performed for the whole mini-batch at a time on modern Graphics Processing Units (GPUs).
     \begin{algorithm}
       \caption{Mini-Batch Gradient Descent}
       \begin{algorithmic}[1]
@@ -158,13 +158,13 @@ There are 3 variants of Gradient Descent: \autocite{ruder2017overviewgradientdes
 \subsection{Optimization algorithms}
 \begin{itemize}
   \item \textbf{Momentum} \\
-    SGD struggles to find the right gradient direction when updates in one dimension are much steeper than in another \autocite{sutton1986two}. Momentum is a method that helps SGD overcome local minima faster and more effective. It works by updating the gradient vector $ v_t = \gamma v_{t-1} + \eta \nabla_\theta F(\theta) $ on each timestamp $t$ and updating the parameters using this vector $ \theta = \theta - v_t $. This ensures that the previous gradient directions are taken into account and helps the objective function accelerate in the right direction. The momentum term $\gamma$ is usually set to $0.9$ so that the momentum doesn't grow into infinity.
+    SGD struggles to find the right gradient direction when updates in one dimension are much steeper than in another \autocite{sutton1986two}. Momentum is a method that helps SGD overcome local minima faster and more effectively. It works by updating the gradient vector $ v_t = \gamma v_{t-1} + \eta \nabla_\theta F(\theta) $ on each timestamp $t$ and updating the parameters using this vector $ \theta = \theta - v_t $. This ensures that the previous gradient directions are taken into account and helps the objective function accelerate in the right direction. The momentum term $\gamma$ is usually set to $0.9$ so that the momentum doesn't grow into infinity.
   \item \textbf{Nesterov accelerated gradient (NAG)} \autocite{nesterov1983method} \\
     The main problem with momentum is that it takes into account only previous vectors and doesn't react fast enough to the changes in the current and future gradient if the momentum is high enough. In NAG the next parameter update is approximated by subtracting the previous momentum. This way, the objective function slows down before the slopes and continues accelerating on the steep areas. The update vector for the current timestamp $t$ is calculated like this: $ v_t = \gamma v_{t-1} + \eta \nabla_\theta F(\theta - \gamma v_{t-1}) $.
   \item \textbf{Adagrad} \autocite{duchi2011adaptive} \\
     In this approach the learning rate is adapted for each parameter individually. Previously, the updates were performed for all parameters $\theta$ since each individual parameter $\theta_i$ used the same learning rate $\eta$. In Adagrad the gradient is calculated for each timestamp and for each parameter individually:
     \[ g_{t,i} = \nabla_\theta F(\theta_{t,i}) \]
-    The update rule also changes. learning rate for each individual parameter now depends on the previous updates of this parameter:
+    The update rule also changes. Learning rate for each individual parameter now depends on the previous updates of this parameter:
     \[ \theta_{t+1, i} = \theta_{t, i} - \frac{\eta}{\sqrt{G_{t, ii} + \epsilon}} g_{t,i}, \]
     where $ G_t \in \mathbb{R}^{d \times d} $ is a diagonal matrix with each element $i, i$ being the sum of the squares of the gradients w.r.t. $ \theta_i $ up to timestamp $t$.
   \item \textbf{Adadelta} \autocite{zeiler2012adadeltaadaptivelearningrate} \\
@@ -175,11 +175,11 @@ There are 3 variants of Gradient Descent: \autocite{ruder2017overviewgradientdes
     \[ \theta_{t+1} = \theta_t - \frac{\eta}{\sqrt{v_t} + \epsilon} m_t, \]
     The best default values are $0.9$ for $\beta_1$, $0.999$ for $\beta_2$ and $10^{-8}$ for $\epsilon$. Adam is one of the most popular GD algorithms with empirically proven efficiency.
   \item \textbf{Adamax} \autocite{kingma2015adam} \\
-    The authors of adam note that it's update rule scales the gradient inversely proportional to a $L^2$ norm of their current and past gradients. After generalizing the $L^2$ to $L^p$ and letting $p \rightarrow \infty$, they're able to replace the term $\sqrt{v_t} + \epsilon$ with $u_t = max(\beta_2 * u_{t - 1}, |g_t|)$, thus receiving:
+    The authors of Adam note that its update rule scales the gradient inversely proportional to a $L^2$ norm of their current and past gradients. After generalizing the $L^2$ to $L^p$ and letting $p \rightarrow \infty$, they're able to replace the term $\sqrt{v_t} + \epsilon$ with $u_t = max(\beta_2 * u_{t - 1}, |g_t|)$, thus receiving:
     \[ \theta_{t+1} = \theta_t - \frac{\eta}{u_t} m_t, \]
 \end{itemize}
 \section{Weights Initialization}
-There are many weight initialization regions that will inevitably lead to exploding/vanishing gradient and thus there is it is sometimes very important to initialize weights in a certain way. \autocite{sun2020optimization}
+There are many weight initialization regions that will inevitably lead to exploding/vanishing gradients, making it sometimes very important to initialize weights in a specific way. \autocite{sun2020optimization}
 \begin{itemize}
   \item \textbf{Naive Initialization} \\
     A naive approach would be to try all-zero point or draw initialization values from a certain random distribution. Although, sometimes this approach works and produces good results, there is no guarantee that it will work for all problems with identical success.
@@ -188,7 +188,7 @@ There are many weight initialization regions that will inevitably lead to explod
   \item \textbf{Glorot Initialization} \autocite{glorot2010understanding} \\
     In analogy, this technique was designed to preserve both activation variance during forward pass and gradient variance during backpropagation. In this approach the variance of the weight distribution is calculated by $var(W_{i,j}^l) = \frac{2}{n_{l-1} + n_{l}}$, where $n_{l-1}$ and $n_{l}$ are the numbers of neurons in the previous and current layers accordingly.
   \item \textbf{He Initialization} \autocite{he2015delving} \\
-    After ReLU activation function became popular, there appeared a need to find of a better initialization method that would fit it. The intuition for this initialization method is that for a symmetric random variable $\psi$, $ E[ReLU(\psi)] = E[max(0, \psi)] = \frac{1}{2} E[\psi] $. Thus, the mean is cut in half by the ReLU function. So in He initialization method the variance of the weight distribution is defined as follows: $var(W_{j,i}^l) = \frac{2}{d_{l-1}}$ or $var(W_{j,i}^l) = \frac{2}{d_l}$.
+    After ReLU activation function became popular, there appeared a need to find a better initialization method that would fit it. The intuition for this initialization method is that for a symmetric random variable $\psi$, $ E[ReLU(\psi)] = E[max(0, \psi)] = \frac{1}{2} E[\psi] $. Thus, the mean is cut in half by the ReLU function. So in He initialization method the variance of the weight distribution is defined as follows: $var(W_{j,i}^l) = \frac{2}{d_{l-1}}$ or $var(W_{j,i}^l) = \frac{2}{d_l}$.
   \item \textbf{Layer-Sequential Unit-Variance (LSUV) Initialization} \autocite{mishkin2015all} \\
     This method is a data-dependent initialization technique that builds upon orthogonal initialization \autocite{saxe2013exact}. Initially, the weight matrices of each layer are initialized to be orthogonal. Then, using a small batch of data, the method iteratively rescales the weights so that the variance of the pre-activation outputs for each layer is approximately equal to $1$. This helps to ensure that signals propagate through the network with unit variance, reducing issues related to vanishing or exploding activations in deep networks.
 \end{itemize}
@@ -197,12 +197,12 @@ There are many weight initialization regions that will inevitably lead to explod
 \label{subsec:normalization}
 
 \begin{definition}
-  \textit{Covariate shift} \autocite{ioffe2015batch} refers to a phenomenon in deep learning where the distribution of inputs to a layer in an Artificial Neural Network changes during training. Due to updates in the parameters in one of the layers of neural network, the distribution of it's outputs changes. As a result, the input distribution to the subsequent layers also shifts, which can render the features learned by those layers suboptimal or even ineffective. This leads to slower convergence and increased instability during training.
+  \textit{Covariate shift} \autocite{ioffe2015batch} refers to a phenomenon in deep learning where the distribution of inputs to a layer in an Artificial Neural Network changes during training. Due to updates in the parameters in one of the layers of neural network, the distribution of its outputs changes. As a result, the input distribution to the subsequent layers also shifts, which can render the features learned by those layers suboptimal or even ineffective. This leads to slower convergence and increased instability during training.
 \end{definition}
 
 Covariate shift is particularly problematic in deep neural networks, where many stacked layers amplify this effect. One solution to this problem would be to normalize the outputs of the layers during forward pass, which would ensure the identical distribution of the outputs. Techniques such as Batch Normalization \autocite{ioffe2015batch} were introduced to address this issue by stabilizing the input distributions to each layer across training iterations.
 
-Batch Normalization (BatchNorm) \autocite{ioffe2015batch} is a technique introduced to stabilize and accelerate the training of deep neural networks by normalizing the output of each layer across the samples in a mini-batch. Simple normalization of the output may lead to the loss of the representational abilities of the activation function in the next layer (e.g. the sigmoid function loses it's nonlinearity, since normalization of the inputs will force them to be in the part of the domain that makes it work in the linear regime). BatchNorm introduces a dedicated nonlinear transformation—referred to as the “BN” layer—into the network architecture. For a layer with $d$-dimensional input $x = (x^{(1)}...x^{(d)})$, a simple normalization would look like this:
+Batch Normalization (BatchNorm) \autocite{ioffe2015batch} is a technique introduced to stabilize and accelerate the training of deep neural networks by normalizing the output of each layer across the samples in a mini-batch. Simple normalization of the output may lead to the loss of the representational abilities of the activation function in the next layer (e.g. the sigmoid function loses its nonlinearity, since normalization of the inputs will force them to be in the part of the domain that makes it work in the linear regime). BatchNorm introduces a dedicated nonlinear transformation—referred to as the “BN” layer—into the network architecture. For a layer with $d$-dimensional input $x = (x^{(1)}...x^{(d)})$, a simple normalization would look like this:
 \[
   \hat{x}^{(k)} = \frac{x^{(k)} - \mu_B}{\sqrt{Var[x^{(k)}]}},
 \]
