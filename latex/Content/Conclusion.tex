@@ -1,0 +1,29 @@
+\chapter{Conclusion and Future Work}
+\label{cha:Conclusion}
+
+\section{Conclusion}
+
+The evaluation results indicate that the behavioral cloning model was able to replicate the expert’s navigational behavior to a significant extent. The relatively low Davies–Bouldin index and moderate silhouette scores show that the BCNet produced trajectories with comparable structural patterns to those of the expert.
+
+The results show that BCNet with LSTM layers performs comparably or better at the beginning of the course due to its conservative control, but struggles significantly in later stages, where small prediction errors accumulate. This suggests the need for more diverse training data or alternative methods like DAgger to improve robustness in varied environments.
+
+Unfortunately, the success rate of the BCNet-driven JetBot was 0\% under the conditions of the second difficulty level. This clearly indicates that the model failed to generalize to spatial variations it had not encountered during training. This limitation is a well-known challenge in behavioral cloning (BC). Since BC relies heavily on supervised learning from expert trajectories, it tends to perform poorly when encountering states that lie outside of the training distribution. The lack of corrective feedback during training means the model is ill-equipped to recover from novel or slightly off-distribution states, especially in tasks involving obstacle avoidance from unfamiliar angles or trajectories.
+
+\section{Future Work}
+
+Based on the findings and limitations of this study, several clear directions for future research can be identified to improve the performance and generalization:
+
+\begin{enumerate}
+  \item \textbf{Increase the Size and Variety of Training Data} \\
+    To improve the model’s ability to generalize, a bigger amount of data should be collected. Especially the dataset for the second difficulty should include a wider range of initial conditions, obstacle arrangements, and environmental variations. Previous research \autocite{KALRA2016182} shows that the amount of high-quality data needed for autonomous vehicle to operate with decent precision should be very high.
+
+  \item \textbf{Use More Robust Training Methods like Dataset Aggregation (DAgger)} \\
+    Since behavioral cloning struggles with unfamiliar states and error accumulation, another possible direction is to explore interactive learning methods like DAgger \autocite{ross2011reduction}. This approach allows the model to receive expert corrections on its own mistakes during training, helping it learn to recover from new or unexpected situations. For example, in \autocite{pan2019agileautonomousdrivingusing} a MPPI system that operates using an expensive set of sensors is utilized to collect the data and to train a convolutional neural model to operate on a similar precision by relying only on the camera input.
+
+  \item \textbf{Combine Deep Learning with Model Predictive Path Integral (MPPI) Control} \\
+    Integrating deep neural networks with MPPI control methods offers another way to improve navigation. Recent works \autocite{lee2021approximateinversereinforcementlearning, drews2017aggressivedeepdrivingmodel} show that convolutional neural networks can predict cost maps used by MPPI controllers to plan better trajectories. This combination leverages learned perception and model-based planning to handle complex and dynamic environments more effectively.
+
+  \item \textbf{Apply Inverse Reinforcement Learning (IRL) to Learn Reward Functions} \\
+    Future research could use inverse reinforcement learning to derive reward functions from expert behavior. Neural networks can be trained to estimate rewards based on state information such as speed, position, and distances to obstacles. These learned rewards can then be used to train policies with on-policy or off-policy reinforcement learning. While on-policy training may require simulation, off-policy methods allow learning from existing data \autocite{arnob2020off}.
+
+\end{enumerate}
