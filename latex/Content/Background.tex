@@ -61,8 +61,15 @@ The concept of CNNs was inspired by Time-Delay Neural Networks, where weights ar
 \section{Regularization}
 
 \begin{definition}
-  \textbf{Overfitting} \autocite{oshea2015introductionconvolutionalneuralnetworks} occurs when a model learns the details and noise in the training data to the extent that it negatively impacts the model’s performance on new, unseen data. This results in a model that has high accuracy on the training set but poor generalization to test data. Usually overfitting is indicated by model's performance on training dataset being much better than on test dataset \autocite{9944190}.
+  \textbf{Overfitting} \autocite{oshea2015introductionconvolutionalneuralnetworks} occurs when a model learns the details and noise in the training data to the extent that it negatively impacts the model’s performance on new, unseen data. This results in a model that has high accuracy on the training set but poor generalization to test data. Usually overfitting is indicated by model's performance on training dataset being much better than on test dataset \autocite{9944190}. A typical overfitting learning curve is illustrated in \autoref{fig:overfitting}.
 \end{definition}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\textwidth]{Images/overfitting.png}
+  \caption{Mean loss over time in case of overfitting.}
+  \label{fig:overfitting}
+\end{figure}
 
 Convolutional Neural Networks, despite their powerful feature extraction capabilities, are highly prone to overfitting (especially when trained on limited or imbalanced datasets) \autocite{alzubaidi2021review}. This is largely due to their large number of learnable parameters, which can easily adapt to noise in the training data. Regularization techniques are therefore essential to improve generalization and ensure that the model performs well on unseen data. Common methods include dropout, weight decay (L2 regularization), data augmentation, and early stopping. These techniques help constrain the learning process, reduce model complexity, and encourage the network to learn more robust and transferable features.
 
