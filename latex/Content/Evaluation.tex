@@ -44,6 +44,8 @@ To better understand directional movement accuracy, silhouette scores were calcu
 
 The axis-wise silhouette scores reveal a key insight: BCNet replicates steering maneuvers (Y-axis) more faithfully than forward motion (X-axis). This aligns with the model's need to prioritize obstacle avoidance over speed regulation in this task.
 
+The diagram of all of the trajectories made by both expert and trained model is shown in \autoref{fig:trajectory_overlay}. The axes represent the pixel coordinates on the video and do not correspond to actual coordinates in the real world.
+
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.6\textwidth]{Images/Evaluation/trajectory_overlay.png}
