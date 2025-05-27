@@ -42,7 +42,7 @@ To facilitate frequent modifications to the model architecture, the \texttt{Kera
 
 \texttt{Keras} also includes a convenient toolkit for training workflows, featuring integrated support for image data preprocessing and augmentation. However, since this thesis involves working with temporal sequences of image frames, which requires accurate frame rate consistency for the training, a custom data augmentation pipeline was implemented. This custom solution ensures that temporal integrity is maintained when transforming image sequences during training, which is critical for models that rely on time-dependent input data.
 
-During development, version compatibility issues were encountered, particularly with \texttt{TensorFlow} on the Jetson Nano hardware. The Jetson platform supports only specific versions of cuDNN, a prerequisite for GPU-accelerated \texttt{TensorFlow}. Consequently, it was necessary to downgrade \texttt{TensorFlow} to a compatible version across the entire project to maintain consistency between training and experimental environments.
+During development, version compatibility issues were encountered, particularly with \texttt{TensorFlow} on the Jetson Nano hardware. The Jetson platform supports only specific versions of \texttt{cuDNN}, a prerequisite for GPU-accelerated \texttt{TensorFlow}. Consequently, it was necessary to downgrade \texttt{TensorFlow} to a compatible version (\texttt{2.10}) across the entire project to maintain consistency between training and experimental environments.
 
 For numerical operations, the \texttt{NumPy} library was employed. \texttt{NumPy} provides a rich collection of mathematical functions that are implemented in optimized \texttt{C/C++} code. This enables efficient numerical computation in \texttt{Python}, which is essential for tasks such as preprocessing datasets, manipulating input tensors, and analyzing model outputs.
 
@@ -85,7 +85,7 @@ The pipeline operates as follows:
 
   \item The computed motor commands are then sent to the JetBot’s motors via the JetBot API, and the process repeats in real time until manual termination.
 
-  \item Upon termination, the collected data is transferred from the JetBot to the client machine. All captured video frames are stored in a dedicated directory as image files, while the control sequence is saved in the same directory using NumPy's binary format (\texttt{.npy}). Each control entry is stored as a tuple \( (x, y, t) \), where \( x \) and \( y \) are the analog stick positions, and \( t \) is the timestamp in milliseconds from the start of the recording session.
+  \item Upon termination, the collected data is transferred from the JetBot to the client machine. All captured video frames are stored in a dedicated directory as image files, while the control sequence is saved in the same directory using \texttt{NumPy}'s binary format (\texttt{.npy}). Each control entry is stored as a tuple \( (x, y, t) \), where \( x \) and \( y \) are the analog stick positions, and \( t \) is the timestamp in milliseconds from the start of the recording session.
 \end{enumerate}
 
 \begin{algorithm}
@@ -106,9 +106,23 @@ The pipeline operates as follows:
 
 The data was initially collected at a frame rate of 30 frames per second (FPS). However, it was later decided to increase the frame rate to 120 FPS, as it is the fastest framerate that the sensor can provide. The rationale behind this decision was that, although the system is not capable of executing the control policy at such a high frequency in real-time, the high-frame-rate sequences could be downsampled during training using time and frequency warping techniques \autocite{iglesias2023data}. This allows for greater flexibility in choosing the effective temporal resolution for training, depending on the model architecture and experimental requirements.
 
-After data collection, a filtering step was applied to remove unrepresentative or low-quality trajectories. In particular, sequences that did not contribute meaningful information to the learning process, such as those recorded after the JetBot had passed the final obstacle pair, were discarded entirely. Additionally, some valid trajectories were cropped to eliminate irrelevant frames that might hinder effective feature extraction during training.
+After data collection, a filtering step was applied to remove unrepresentative or low-quality trajectories. In particular, sequences that did not contribute meaningful information to the learning process, such as those recorded after the JetBot had passed the final obstacle pair, were discarded entirely. Additionally, some valid trajectories were cropped to eliminate irrelevant frames that might hinder effective feature extraction during training. The amount of data points in the final dataset is shown in \autoref{tab:dataset}.
 
-The final dataset consists of 22,017 labeled images and is divided into two subsets: one for the first difficulty level and the other for the second difficulty level. The first difficulty subset contains 15,008 data points, while the remaining 7,009 correspond to the second difficulty.
+\begin{table}[htbp]
+  \centering
+  \caption{Dataset distribution across difficulty levels}
+  \begin{tabular}{|c|c|c|}
+    \hline
+    \textbf{Subset} & \textbf{Number of Images} \\
+    \hline
+    Difficulty Level 1 & 15,008 \\
+    Difficulty Level 2 & 7,009 \\
+    \hline
+    \textbf{Total} & \textbf{22,017} \\
+    \hline
+  \end{tabular}
+  \label{tab:dataset}
+\end{table}
 
 It is important to note that the quality and quantity of data for the second difficulty level are suboptimal. Compared to the first difficulty, the second requires a significantly higher degree of generalization from the model due to increased environmental variability. Ideally, the dataset for the second difficulty would have included more examples with greater diversity and a broader distribution of features. However, due to time constraints, the substantial workload involved in completing this thesis, and the labor-intensive nature of data acquisition and filtering, it was decided to proceed with training using the existing dataset.
 
