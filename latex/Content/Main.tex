@@ -88,6 +88,15 @@ The pipeline operates as follows:
   \item Upon termination, the collected data is transferred from the JetBot to the client machine. All captured video frames are stored in a dedicated directory as image files, while the control sequence is saved in the same directory using \texttt{NumPy}'s binary format (\texttt{.npy}). Each control entry is stored as a tuple \( (x, y, t) \), where \( x \) and \( y \) are the analog stick positions, and \( t \) is the timestamp in milliseconds from the start of the recording session.
 \end{enumerate}
 
+The flow of the data acquisition pipeline is depicted in \autoref{fig:data_acquisition}.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\textwidth]{Images/data_acquisition.png}
+  \caption{Data acquisition timing diagram.}
+  \label{fig:data_acquisition}
+\end{figure}
+
 \begin{algorithm}
   \caption{Calculation of motor inputs based on the gamepad's stick position}
   \begin{algorithmic}[1]
