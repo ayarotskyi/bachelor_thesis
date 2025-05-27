@@ -1,22 +1,24 @@
-name: tf
+name: tf-test
 channels:
   - conda-forge
   - nodefaults
 dependencies:
-  - python=3.11
+  - python=3.9.21
   - pip
+  - cudatoolkit=11.2
+  - cudnn=8.1.0
 
   ## uncomment for use with Jupyter
   ## - ipykernel
 
   ## PyPI packages
   - pip:
-      - tensorflow==2.13.0
+      - tensorflow==2.10.1
       - opencv-python
-      - numpy==1.24.3
-      - keras==2.13.1
+      - numpy==1.26.4
+      - keras==2.10.0
       - larq==0.13.3
       - pandas==2.2.3
-      - matplotlib==3.10.0
+      - matplotlib==3.9.4
       - pygame
       - tqdm
