@@ -7,15 +7,32 @@
 
 The arena used in this thesis is represented as a \(2 \times 1\) meter surface, on which obstacles measuring \(4 \times 4 \times 16\) cm are placed. The setup resembles the one used in König’s thesis \autocite{konig2022model}, with the key difference being that all obstacles in the current thesis are of a single color. To ensure measurement precision as well as material stability and robustness, 3D-printing technology was chosen for obstacle fabrication. This approach also facilitates a smooth transition to virtual reality, in case virtualization becomes necessary.
 
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\textwidth]{Images/JetBot/top_down_arena_view.png}
+  \caption{Top-down view of the arena.}
+  \label{fig:arena}
+\end{figure}
+
 To address the first difficulty, the obstacles were glued to the arena surface to ensure they maintained their exact positions during preparation and evaluation. However, for the second difficulty (where frequent repositioning of obstacles is required) they were left unglued. In each experimental run, three pairs of obstacles are installed on the arena. Their positions are deliberately selected to maximize the likelihood that they remain within the camera’s field of view until the robot passes them.
 
 \subsection{Hardware}
 
 To collect training data and evaluate the trained models, the NVIDIA JetBot is employed, consistent with previous research conducted by ScaDS.AI. The JetBot is powered by a Jetson Nano module, which features 4 GB of LPDDR4 memory and 128 CUDA cores, capable of running at a maximum clock speed of 921 MHz. These computational capabilities are sufficient to execute the entire control inference pipeline at a frequency of 4 Hz, ensuring timely responses for real-time navigation tasks. The detailed description of the pipeline is represented in \autoref{sec:pipeline}.
 
+\begin{figure}[htbp]
+  \centering
+  \tabulinesep=1.2mm
+  \begin{tabu}{cc}
+    \includegraphics[width=0.4\textwidth]{Images/JetBot/height.jpeg} & \includegraphics[width=0.474\textwidth]{Images/JetBot/width.jpeg} \\
+  \end{tabu}
+  \caption{JetBot and its measurements.}
+  \label{fig:jetbot}
+\end{figure}
+
 The movement system consists of two DC motors with integrated encoders, connected to the Jetson Nano through a motor driver interface. This allows the control of the robot’s differential drive mechanism, enabling it to perform turns and controlled straight motion. The motors are powered by a rechargeable lithium-ion battery, providing enough energy for several hours of operation under typical loads.
 
-For motor control and overall robot management, the JetBot API was used, which conveniently provides \texttt{Python} bindings. This allows integration with the data acquisition and inference components, all of which are written in \texttt{Python}. Although the API includes various methods to control the JetBot, this thesis adopts the direct velocity control method. For each of the two motors the velocity can be set to any value within the range \([-1, 1]\), where \(-1\) corresponds to full reverse, \(0\) to a stationary motor, and \(1\) to full forward speed. This approach simplifies the control logic and makes the task of mapping the joystick inputs to control signals more straightforward.
+For motor control and overall robot management, the JetBot API was used, which conveniently provides \texttt{Python} bindings. This allows integration with the data acquisition and inference components, all of which are written in \texttt{Python}. Although the API includes various methods to control the JetBot, this thesis adopts the direct velocity control method. For each of the two motors the velocity can be set to any value within the range \([-1, 1]\), where \(-1\) corresponds to full reverse, \(0\) to a stationary motor, and \(1\) to full forward speed. This approach simplifies the control logic and makes the task of mapping the gamepad inputs to control signals more straightforward.
 
 Additional peripherals include a wide-angle Raspberry Pi Camera BMP (V2) module, used for visual input, and a Wi-Fi module for remote access and debugging. The camera captures frames at a resolution suitable for both training and real-time inference with a maximum frame rate of 120 Hz.
 
@@ -34,6 +51,13 @@ All image processing tasks, including resizing, cropping, filtering, and saving 
 \section{Data Acquisition}
 
 To perform supervised learning using Behavioral Cloning, it was necessary to collect a labeled dataset. The dataset \( D \) is represented as a sequence of input-output pairs \( (x_i, y_i) \in D \), where \( x_i \) denotes the sensor input (in this case, camera frames), and \( y_i \) represents the corresponding control signal required for the robot at that point in time. To generate these labels, a gamepad was used, with the inclination of its left analog stick mapped to motor speed values for the JetBot using a special function.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.2\textwidth]{Images/JetBot/gamepad.jpeg}
+  \caption{Photo of the gamepad used for data acquisition.}
+  \label{fig:gamepad}
+\end{figure}
 
 To streamline the data collection process, a custom data acquisition pipeline was developed. Its primary goals were to (1) allow real-time control of the JetBot via the gamepad, (2) capture synchronized sensor data, and (3) store the collected data in a structured format. The pipeline consists of two components:
 
@@ -217,9 +241,9 @@ The generator constructs temporal sequences of input frames, ensuring that the i
 
 For training, a maximum frame frequency of 4 Hz is typically used. This rate provides a balance between temporal resolution and computational load and is sufficient for most models to make their predictions, particularly when controlling the JetBot at low velocities.
 
-After all frames are pre-processed and collected into the memory stack, a corresponding label must be generated for the data sequence. The label is obtained from the coordinates of the joystick's left analog stick in the frame immediately following the last frame in the sequence. Several alternative strategies were explored, including predicting the joystick position of the current frame or of a frame two steps ahead. However, predicting the next frame's joystick position yielded the best results. This can be explained by the latency of the inference pipeline: the system requires approximately $0.25$ seconds to compute the motor commands and invoke the API to apply them. In the case the model requires less time for the prediction, the pipeline is artificially slowed down to conform the target frequency. By the time this process is complete, the system's state has already changed. Therefore, predicting the immediate future state (i.e., the next frame) aligns more closely with real-world control requirements.
+After all frames are pre-processed and collected into the memory stack, a corresponding label must be generated for the data sequence. The label is obtained from the coordinates of the gamepad's left analog stick in the frame immediately following the last frame in the sequence. Several alternative strategies were explored, including predicting the gamepad position of the current frame or of a frame two steps ahead. However, predicting the next frame's gamepad position yielded the best results. This can be explained by the latency of the inference pipeline: the system requires approximately $0.25$ seconds to compute the motor commands and invoke the API to apply them. In the case the model requires less time for the prediction, the pipeline is artificially slowed down to conform the target frequency. By the time this process is complete, the system's state has already changed. Therefore, predicting the immediate future state (i.e., the next frame) aligns more closely with real-world control requirements.
 
-An alternative approach was also evaluated, where the labels consisted of direct motor velocity signals rather than joystick coordinates. This method is inspired by the research of Hwangbo et al. \autocite{hwangbo2019learning}, who reported improved performance when training legged robots using low-level actuator signals. However, in experiments run on the JetBot, using motor velocities as labels led to significantly worse model performance compared to using analog stick coordinates. These results suggest that for wheeled robots with simple dynamics, high-level control signals (joystick coordinates) may provide more actionable supervision than low-level actuator targets. This contrasts with legged robots, where direct motor control can better capture complex movement patterns.
+An alternative approach was also evaluated, where the labels consisted of direct motor velocity signals rather than gamepad coordinates. This method is inspired by the research of Hwangbo et al. \autocite{hwangbo2019learning}, who reported improved performance when training legged robots using low-level actuator signals. However, in experiments run on the JetBot, using motor velocities as labels led to significantly worse model performance compared to using analog stick coordinates. These results suggest that for wheeled robots with simple dynamics, high-level control signals (gamepad coordinates) may provide more actionable supervision than low-level actuator targets. This contrasts with legged robots, where direct motor control can better capture complex movement patterns.
 
 Once the state-label pair is assembled, it is stored in a buffer array used for data augmentation. The number of stored instances is determined by a user-defined parameter passed to the data generator. During subsequent iterations, with a certain probability, the generator may retrieve a stored pair from the augmentation buffer, apply a set of transformations (see \autoref{sec:augmentation}), and yield the augmented data before proceeding with the next unmodified pair.
 
@@ -301,7 +325,7 @@ By combining time series augmentation principles, as outlined in \autocite{igles
 The training process was carefully configured using a set of well-established deep learning practices to ensure efficient convergence, prevent overfitting, and promote generalization across unseen data.
 
 \paragraph{Optimizer and Loss Function.}
-The model was trained using the Adam optimizer \autocite{kingma2015adam}, a widely adopted method in deep learning due to its ability to adaptively adjust learning rates for each parameter. The objective function minimized during training was the Mean Squared Error (MSE), selected for its suitability in regression tasks, particularly when predicting continuous joystick values within a bounded range.
+The model was trained using the Adam optimizer \autocite{kingma2015adam}, a widely adopted method in deep learning due to its ability to adaptively adjust learning rates for each parameter. The objective function minimized during training was the Mean Squared Error (MSE), selected for its suitability in regression tasks, particularly when predicting continuous gamepad values within a bounded range.
 
 \paragraph{Activation Functions.}
 For the convolutional layers, the Rectified Linear Unit (ReLU) activation function was used. ReLU is known for its simplicity, non-saturating gradient behavior, and computational efficiency. It has also been shown to facilitate the training of deep networks by addressing the vanishing gradient problem \autocite{DBLP:journals/corr/abs-1803-08375}. For the LSTM layer, the hyperbolic tangent (tanh) activation function was employed. This choice is rooted both in theoretical considerations (tanh is the standard activation function used within LSTM cells \autocite{K20222637}) and practical ones, as the model output is expected to lie within the \([-1, 1]\) range, which tanh naturally supports.
