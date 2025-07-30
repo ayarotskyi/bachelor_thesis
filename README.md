@@ -2,6 +2,7 @@
 
 This repository contains architecture and training pipeline for the CNN capable of autonomously driving NVIDIA's Jetbot through an abstacle course.
 
+## The footage of the trained model ([link to model](https://huggingface.co/datasets/ayarotskyi/bachelor_thesis/tree/main/models/BSNetLSTM/raw_input)) making its way through the course
 ![Top-down view of the Jetbot being controlled by the CNN](./top-down.gif)
 
 # Environment setup:
