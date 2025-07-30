@@ -1,3 +1,9 @@
+# Use of Imitation Learning in an Obstacle Course Scenario
+
+This repository contains architecture and training pipeline for the CNN capable of autonomously driving NVIDIA's Jetbot through an abstacle course.
+
+![Top-down view of the Jetbot being controlled by the CNN](./top-down.gif)
+
 # Environment setup:
 
 - MacOS:
